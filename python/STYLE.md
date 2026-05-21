@@ -83,10 +83,10 @@ from . import charm as _charm
 **Don't:**
 
 ```python
-units = [units for app in model.apps for unit in app.units]
+units = [unit for app in model.apps for unit in app.units]
 
 for current in (
-    status for status in pebble.ServiceStatus if status is not pebble.ServiceStatus.ACTIVE
+    current for current in pebble.ServiceStatus if current is not pebble.ServiceStatus.ACTIVE
 ):
     ...
 ```
