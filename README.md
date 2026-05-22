@@ -30,11 +30,11 @@ example, an `AGENTS.md` or `CONTRIBUTING.md` can point at
 
 ### Reusable CI
 
-- [.github/workflows/zizmor.yaml](./.github/workflows/zizmor.yaml) — a reusable
-  workflow that runs the [zizmor](https://github.com/zizmorcore/zizmor) GitHub
-  Actions security scanner and uploads SARIF results.
-
-Call it from another repo with a thin caller workflow:
+Reusable workflows for other repos to call live in
+[.github/workflows/](./.github/workflows/). The main one runs the
+[zizmor](https://github.com/zizmorcore/zizmor) GitHub Actions security scanner
+and uploads SARIF results; call it from another repo with a thin caller
+workflow:
 
 ```yaml
 # .github/workflows/zizmor.yaml in the consuming repo
