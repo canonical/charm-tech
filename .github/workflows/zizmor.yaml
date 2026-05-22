@@ -9,16 +9,11 @@
 #       permissions:
 #         security-events: write
 #
-# See templates/zizmor-caller.yaml for a complete caller workflow.
+# See the README for a complete caller workflow.
 name: zizmor (reusable)
 
 on:
   workflow_call:
-    inputs:
-      zizmor-version:
-        description: "The zizmor version to run (a uvx version specifier)."
-        type: string
-        default: "v1.11.0"
 
 permissions: {}
 
@@ -33,12 +28,16 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install the latest version of uv
+      - name: Install uv
         uses: astral-sh/setup-uv@bd01e18f51369d5a26f1651c3cb451d3417e3bba  # v6.3.1
 
       - name: Run zizmor
-        run: uvx zizmor@${{ inputs.zizmor-version }} --format=sarif . > results.sarif
+        run: uvx zizmor@1.11.0 --format=sarif . > results.sarif
         env:
+          # zizmor uses the token to authenticate its GitHub API requests, which
+          # raises the rate limit and puts it in "online mode" so it runs the
+          # extra audits that need network access (e.g. resolving action refs).
+          # See https://docs.zizmor.sh/usage/#online-mode
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload SARIF file

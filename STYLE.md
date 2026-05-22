@@ -2,7 +2,7 @@
 
 This is the documentation and docstring style we use across Charm Tech projects,
 regardless of the programming language. For language-specific code style, see
-[python/STYLE.md](./python/STYLE.md) and [go/STYLE.md](./go/STYLE.md).
+[python-style.md](./python-style.md) and [go-style.md](./go-style.md).
 
 New docs should follow these guidelines, unless there's a good reason not to.
 Sometimes existing docs don't follow these, but we're happy for them to be
@@ -13,15 +13,25 @@ review; this list reflects our team decisions.
 
 ## Docs and docstrings
 
-### Use British English
+### English spelling
 
-[Canonical's documentation style](https://docs.ubuntu.com/styleguide/en/) uses
-British spelling, which we try to follow here. For example: "colour" rather than
-"color", "labelled" rather than "labeled", "serialise" rather than "serialize",
-and so on.
+**Note:** [Canonical's documentation style guide](https://documentation.ubuntu.com/style-guide)
+has changed to American English ("Canonical previously used UK English, but has
+changed to US English"). Our docs haven't migrated yet, so for now we keep
+**British** spelling for consistency with our existing content — for example
+"colour" rather than "color", "labelled" rather than "labeled", "serialise"
+rather than "serialize". Expect this recommendation to flip to American English
+in due course.
 
-It's a bit less clear when we're dealing with code and APIs, as those normally
-use US English, for example, `pytest.mark.parametrize`, and `color: #fff`.
+Better still, where you can, **reword to avoid words that are spelt differently**
+in British and American English — then the text reads correctly under either
+convention and won't need touching when we migrate. For example, prefer "encode
+the config as JSON" over "serialise the config", or "this changes how the charm
+behaves" over "this changes the charm's behaviour".
+
+When you're dealing with code and APIs, use whatever spelling the code or API
+offers — match it exactly. For example, `pytest.mark.parametrize` and
+`color: #fff` stay as they are.
 
 ### Spell out abbreviations
 

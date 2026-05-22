@@ -2,7 +2,7 @@
 
 This is the Go code style we're converging on across the Go projects maintained
 by the Charm Tech team. For documentation and docstring style (which applies to
-all languages), see [the top-level STYLE.md](../STYLE.md).
+all languages), see [the top-level STYLE.md](./STYLE.md).
 
 New code should follow these guidelines, unless there's a good reason not to.
 Sometimes existing code doesn't follow these, but we're happy for it to be

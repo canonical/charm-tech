@@ -2,14 +2,13 @@
 
 This is the Python code style we're converging on across the projects maintained
 by the Charm Tech team. For documentation and docstring style (which applies to
-all languages), see [the top-level STYLE.md](../STYLE.md).
+all languages), see [the top-level STYLE.md](./STYLE.md).
 
 We use Ruff for formatting, and run our code through the Pyright type checker. We
 try to follow [PEP 8](https://peps.python.org/pep-0008/), the official Python
 style guide. However, PEP 8 is fairly low-level, so in addition we've come up
-with the following style guidelines. See
-[pyproject-snippets.toml](./pyproject-snippets.toml) for the canonical tool
-config that enforces much of this.
+with the following style guidelines. See [Tooling configuration](#tooling-configuration)
+below for the standardised lint/format/type-check config that enforces much of this.
 
 New code should follow these guidelines, unless there's a good reason not to.
 Sometimes existing code doesn't follow these, but we're happy for it to be
@@ -131,3 +130,31 @@ if status is pebble.ServiceStatus.ACTIVE:
 if status is not pebble.ServiceStatus.ACTIVE:
     print('Stopped')
 ```
+
+## Tooling configuration
+
+Our repos (operator, jubilant, pytest-jubilant, charmhub-listing-review,
+charmlibs) have converged on a common lint/format/type-check configuration. The
+aim is consistency, not lock-step: a project can deviate where it has a good
+reason, but this is the default.
+
+The decisions:
+
+- **Line length is 99.**
+- **Single quotes** for strings (`ruff format` `quote-style = "single"`).
+- **Type-checking is `strict`** (pyright), with `reportPrivateUsage = false`
+  (things that are effectively public still need to be private to users) and
+  `reportUnnecessaryTypeIgnoreComment = "error"`.
+- **Set `target-version` / `pythonVersion` to the project's actual minimum
+  supported Python** — don't leave it stale (several repos disagreed with their
+  own `requires-python`).
+- **Coverage runs with `branch = true`.**
+- The agreed **ruff rule set** is: `F`, `E`, `W`, `I001`, `N`, `A`, `CPY`, `UP`,
+  `YTT`, `S`, `B`, `SIM`, `RUF`, `PERF`, `D`, `FA`, `TC` — ignoring `TC001`–`TC003`
+  (don't force imports into type-checking blocks), `S101` (`assert` is fine), and
+  `D105`/`D107` (no docstrings required for magic/`__init__` methods). Tests
+  additionally drop `D` and the hard-coded-secret checks (`S101`/`S105`/`S106`).
+
+The ready-to-copy `pyproject.toml` config itself will be distributed via the
+shared-template mechanism (see canonical/charm-tech#6); this section records
+*what* we standardised on.

@@ -21,36 +21,12 @@ code review.
 
 - [STYLE.md](./STYLE.md) — documentation and docstring style (language-agnostic:
   British English, abbreviations, how to write great docs).
-- [python/STYLE.md](./python/STYLE.md) — Python code style.
-- [go/STYLE.md](./go/STYLE.md) — Go code style.
+- [python-style.md](./python-style.md) — Python code style.
+- [go-style.md](./go-style.md) — Go code style.
 
 Other repos should link to these rather than maintaining their own copies. For
 example, an `AGENTS.md` or `CONTRIBUTING.md` can point at
 `https://github.com/canonical/charm-tech/blob/main/STYLE.md`.
-
-### Python project config
-
-Canonical snippets to copy into a Python project, so that lint/format/type-check
-behave consistently across repos:
-
-- [python/pyproject-snippets.toml](./python/pyproject-snippets.toml) — `ruff`,
-  `codespell`, `pyright`, and `coverage` config.
-- [python/tox-template.ini](./python/tox-template.ini) — standard `lint`,
-  `format`, `static`, and `unit` environments.
-
-### Templates
-
-Files to copy into a repo and lightly customise (replace `{{REPO}}` etc.):
-
-- [templates/SECURITY.md](./templates/SECURITY.md)
-- [templates/CONTRIBUTING.md](./templates/CONTRIBUTING.md)
-- [templates/AGENTS.md](./templates/AGENTS.md)
-- [templates/dependabot-python-uv.yaml](./templates/dependabot-python-uv.yaml)
-- [templates/dependabot-go.yaml](./templates/dependabot-go.yaml)
-- [templates/pre-commit-config.yaml](./templates/pre-commit-config.yaml)
-- [templates/claude-settings.json](./templates/claude-settings.json)
-- [templates/zizmor-caller.yaml](./templates/zizmor-caller.yaml) — caller for the
-  reusable zizmor workflow below.
 
 ### Reusable CI
 
@@ -77,8 +53,7 @@ jobs:
 ```
 
 Pin to a commit SHA (not `@main`) so a change here can't silently alter another
-repo's CI. See [templates/zizmor-caller.yaml](./templates/zizmor-caller.yaml)
-for a ready-to-copy caller.
+repo's CI.
 
 ## Licence
 
