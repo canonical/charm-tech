@@ -1,8 +1,3 @@
-<!--
-  Copyright 2026 Canonical Ltd.
-  See LICENSE file for licensing details.
--->
-
 # Charm Tech Skills
 
 Curated [agent skills](https://agentskills.io) for the **Charm Tech team**.
@@ -26,10 +21,11 @@ assume a particular coding harness.
 ### With the `skills` CLI (recommended)
 
 ```bash
-npx skills add canonical/charm-tech --list             # list available skills
-npx skills add canonical/charm-tech                    # install all of them
-npx skills add canonical/charm-tech --skill code-review        # one, into this project
-npx skills add canonical/charm-tech --skill code-review -g     # one, into your user/global skills
+npx skills add canonical/charm-tech --list                  # list available skills
+npx skills add canonical/charm-tech                         # pick from a list, into this project
+npx skills add canonical/charm-tech --all                   # install all of them, into this project
+npx skills add canonical/charm-tech --skill code-review     # one, into this project
+npx skills add canonical/charm-tech --skill code-review -g  # one, into your user/global skills
 ```
 
 ### Manually
@@ -60,12 +56,6 @@ the tooling keys on, so nesting depth does not matter.
 | `gha-security-review` | GitHub Actions security review — pwn requests, expression injection, credential theft, supply-chain attacks, with concrete PoCs. |
 | `iterate-pr` | Drive a PR to green: fix CI failures, address review feedback, push, and wait, on a loop. |
 
-### `documentation/` — docs review
-
-| Skill | What it does |
-| :-- | :-- |
-| `documentation-review` | Orchestrates an end-to-end documentation review (build, Diataxis, structure, accuracy, style) and renders a consolidated report. See note below. |
-
 ### `meta/` — skills and agent docs
 
 | Skill | What it does |
@@ -74,31 +64,28 @@ the tooling keys on, so nesting depth does not matter.
 | `skill-scanner` | Audit a skill for prompt injection, scope bloat, description drift, malicious scripts, secret exposure, and excessive permissions. Ships a static scanner. |
 | `agents-md` | Maintain `AGENTS.md` (the cross-tool agent-docs standard) — minimal, high-signal agent instructions. |
 
+## Related skills elsewhere
+
+Skills our team finds useful that live in other repositories — not bundled
+here, but worth installing from their source:
+
+| Skill | Where | Notes |
+| :-- | :-- | :-- |
+| `documentation-review` (+ `documentation-build`, `documentation-diataxis`, `documentation-structure`, `documentation-style`, `documentation-verify`) | [canonical/copilot-collections](https://github.com/canonical/copilot-collections) | End-to-end documentation review. `documentation-review` orchestrates the other five, so install the whole set together. |
+
 ## Notes
 
-- **`documentation-review` is the orchestrator only.** It invokes five atomic
-  skills (`documentation-build`, `documentation-diataxis`,
-  `documentation-structure`, `documentation-style`, `documentation-verify`)
-  that are **not** bundled here. Install them from
-  [canonical/copilot-collections](https://github.com/canonical/copilot-collections)
-  if you want the full pipeline; otherwise treat this as a review checklist.
 - **`iterate-pr`** references `${CLAUDE_SKILL_ROOT}` (a Claude Code env var)
   when locating its helper scripts. On other harnesses, point at the script
   paths directly.
 
 ## Provenance and licences
 
-Skills are vendored from several sources; attribution is preserved in each
-skill's frontmatter (`metadata.source`) and any bundled `LICENSE`.
-
-| Skill | Source | Licence |
-| :-- | :-- | :-- |
-| `code-review`, `go-standards`, `cli-standards` | [charming-with-claude](https://github.com/tonyandrewmeyer/charming-with-claude) | CC BY 4.0 |
-| `documentation-review` | [canonical/copilot-collections](https://github.com/canonical/copilot-collections) | Apache-2.0 |
-| `security-review` | locally-installed; reference material derived from the [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/) | Apache-2.0 / refs CC BY-SA 4.0 (see skill `LICENSE`) |
-| `gha-security-review`, `iterate-pr`, `agents-md` | locally-installed | Apache-2.0 |
-| `skill-writer` | combined: [cantrip](https://github.com/tonyandrewmeyer/cantrip) + [copilot-collections](https://github.com/canonical/copilot-collections) | Apache-2.0 |
-| `skill-scanner` | combined: [cantrip](https://github.com/tonyandrewmeyer/cantrip) + locally-installed scanner | Apache-2.0 |
+Skills are vendored from several sources. Each skill is the single source of
+truth for its own provenance and licensing: see the top-level `license` field
+and `metadata.source` in its `SKILL.md` frontmatter, plus any bundled
+`LICENSE` file (for example `security-review`, whose reference material
+derives from the [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/)).
 
 ## Contributing
 
@@ -111,3 +98,12 @@ python3 skills/meta/skill-writer/scripts/validate_skill.py --path skills/<catego
 
 Keep skills scoped to **maintaining our repos** (the criterion above), and
 keep them harness-agnostic.
+
+Every skill **must** declare a top-level `license` and a `metadata.source` in
+its `SKILL.md` frontmatter. Set `license` to an
+[SPDX identifier](https://spdx.org/licenses/) (e.g. `Apache-2.0`, `CC-BY-4.0`)
+— it's a standard frontmatter field. Set `metadata.source` to the upstream URL
+the skill was vendored or adapted from (use this repo's URL for skills
+originally authored here); `source` is a custom field, so it lives under
+`metadata`. Bundle a `LICENSE` file in the skill directory when the licence
+requires the full text or the reference material adds its own terms.

@@ -2,9 +2,11 @@
 name: go-standards
 description: Canonical Go coding standards and best practices. Use when writing, reviewing, or refactoring Go code. Covers formatting, naming, errors, functions, structs, interfaces, and testing conventions.
 argument-hint: [topic]
-license: default
+license: CC-BY-4.0
 compatibility: universal
 allowed-tools: Read Grep Glob
+metadata:
+  source: https://github.com/tonyandrewmeyer/charming-with-claude
 ---
 
 # Canonical Go Best Practices

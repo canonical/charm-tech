@@ -1,6 +1,9 @@
 ---
 name: iterate-pr
 description: Iterate on a PR until CI passes. Use when you need to fix CI failures, address review feedback, or continuously push fixes until all checks are green. Automates the feedback-fix-push-wait cycle.
+license: Apache-2.0
+metadata:
+  source: https://github.com/getsentry/skills
 ---
 
 # Iterate on PR Until CI Passes
@@ -9,7 +12,7 @@ Continuously iterate on the current branch until all CI checks pass and review f
 
 **Requires**: GitHub CLI (`gh`) authenticated.
 
-**Important**: All scripts must be run from the repository root directory (where `.git` is located), not from the skill directory. Use the full path to the script via `${CLAUDE_SKILL_ROOT}`.
+**Important**: All scripts must be run from the repository root directory (where `.git` is located), not from the skill directory. Reference scripts by their full path. On Claude Code, `${CLAUDE_SKILL_ROOT}` is set automatically to this skill's install directory. On other harnesses it won't be set — replace `${CLAUDE_SKILL_ROOT}` in the commands below with the actual path to this skill's directory.
 
 ## Bundled Scripts
 

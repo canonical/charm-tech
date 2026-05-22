@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # /// script
-# requires-python = ">=3.9"
+# requires-python = ">=3.10"
 # dependencies = ["pyyaml"]
 # ///
 """
@@ -27,6 +27,10 @@ import yaml
 
 
 # --- Pattern Definitions ---
+
+# Reference files that legitimately document injection patterns can include
+# this marker to opt out of the prompt-injection scan (other checks still run).
+DOC_CONTEXT_MARKER = "<!-- skill-scanner: documentation-context -->"
 
 PROMPT_INJECTION_PATTERNS: list[tuple[str, str, str]] = [
     # (pattern, description, severity)
@@ -206,8 +210,13 @@ def check_prompt_injection(content: str, filepath: str) -> list[dict[str, Any]]:
     return findings
 
 
-def check_obfuscation(content: str, filepath: str) -> list[dict[str, Any]]:
-    """Detect obfuscation techniques."""
+def check_obfuscation(content: str, filepath: str, scan_comment_injection: bool = True) -> list[dict[str, Any]]:
+    """Detect obfuscation techniques.
+
+    Set scan_comment_injection=False for documentation-context files that
+    deliberately quote injection patterns (the zero-width/RTL/base64 checks
+    still run regardless).
+    """
     findings: list[dict[str, Any]] = []
     lines = content.split("\n")
 
@@ -259,7 +268,7 @@ def check_obfuscation(content: str, filepath: str) -> list[dict[str, Any]]:
 
     # HTML comments with suspicious content
     comment_pattern = re.compile(r"<!--(.*?)-->", re.DOTALL)
-    for match in comment_pattern.finditer(content):
+    for match in comment_pattern.finditer(content) if scan_comment_injection else []:
         comment_text = match.group(1)
         # Check if the comment contains injection-like patterns
         for pattern, description, severity in PROMPT_INJECTION_PATTERNS:
@@ -415,8 +424,14 @@ def scan_skill(skill_dir: Path) -> dict[str, Any]:
                 except OSError:
                     continue
                 rel_path = f"references/{ref_file.name}"
-                all_findings.extend(check_prompt_injection(ref_content, rel_path))
-                all_findings.extend(check_obfuscation(ref_content, rel_path))
+                # A reference file that is itself a catalogue of injection
+                # patterns (e.g. documentation) can opt out of the prompt-
+                # injection scan with an explicit, reviewable marker. All
+                # other checks still run, and unmarked files scan as normal.
+                doc_context = DOC_CONTEXT_MARKER in ref_content
+                if not doc_context:
+                    all_findings.extend(check_prompt_injection(ref_content, rel_path))
+                all_findings.extend(check_obfuscation(ref_content, rel_path, scan_comment_injection=not doc_context))
                 all_findings.extend(check_secrets(ref_content, rel_path))
                 all_urls.extend(extract_urls(ref_content, rel_path))
 

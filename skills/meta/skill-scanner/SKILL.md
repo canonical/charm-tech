@@ -2,9 +2,9 @@
 name: skill-scanner
 description: Scan an agent skill for security and quality issues. Use when asked to "scan a skill", "audit a skill", "review skill security", "check a skill for prompt injection", "validate SKILL.md", or assess whether a skill is safe to install. Checks for prompt injection, scope bloat, description drift, malicious scripts, secret exposure, excessive permissions, and supply-chain risk.
 allowed-tools: Read, Grep, Glob, Bash
+license: Apache-2.0
 metadata:
-  source: "Combined: tonyandrewmeyer/cantrip (heuristic checklist) + locally-installed skill-scanner (scan_skill.py + deep-analysis references)"
-  license: Apache-2.0
+  source: "Combined: tonyandrewmeyer/cantrip (heuristic checklist) + getsentry/skills skill-scanner (scan_skill.py + deep-analysis references)"
 ---
 
 # Skill Scanner
@@ -156,6 +156,13 @@ Treat any `critical`/`high` finding from the script as a `HIGH` for
 gating purposes. The script is an aid, not an oracle: a clean run does
 not prove a skill is safe — read the scripts yourself for anything you
 will install with broad permissions.
+
+A reference file that legitimately documents injection patterns (a
+pattern catalogue, for instance) would otherwise self-trigger the
+prompt-injection check. Such a file can opt out by including the marker
+`<!-- skill-scanner: documentation-context -->`. Only the prompt-injection
+check is skipped for marked files; all other checks still run, and the
+marker is plainly visible in review so it cannot be abused silently.
 
 ## Output format
 

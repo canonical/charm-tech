@@ -1,6 +1,11 @@
+<!-- skill-scanner: documentation-context -->
 # Prompt Injection Patterns
 
 Patterns to detect when scanning agent skills for prompt injection attacks.
+
+This file is a catalogue of the very patterns the scanner looks for, so it
+carries the `documentation-context` marker above to opt out of the scanner's
+own prompt-injection check (all other checks still apply).
 
 ## Instruction Override Patterns
 

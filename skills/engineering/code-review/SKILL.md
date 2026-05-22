@@ -1,9 +1,11 @@
 ---
 name: code-review
 description: Canonical code review guidelines. Use when reviewing code, preparing PRs for review, or giving feedback on changesets. Covers tone, procedures, code quality, changeset scope, and review process.
-license: default
+license: CC-BY-4.0
 compatibility: universal
 allowed-tools: Read Grep Glob
+metadata:
+  source: https://github.com/tonyandrewmeyer/charming-with-claude
 ---
 
 # Canonical Code Review Guidelines
@@ -24,19 +26,28 @@ Based on spec PE-ALL-005.
 - Avoid being overtly negative, even if something is poor quality
 - Remember: review is a **learning experience** for both author and reviewers
 
+### Label comments by intent
+Prefix each comment with its intent so the author can tell blocking issues from
+optional ones at a glance (see [Conventional Comments](https://conventionalcomments.org/)):
+- `blocking:` — must be resolved before merge
+- `suggestion:` — a proposed improvement; the author decides
+- `nit:` — minor/stylistic; non-blocking by definition
+- `question:` — seeking clarification, not necessarily a change
+- `praise:` — call out something done well
+Add `(non-blocking)` to any label when the distinction isn't obvious from the prefix.
+
 ### Self-review
-- Review your own code before submitting
-- Catches spurious changes, incomplete work, and things you missed in the editor
-- Self-review changes how you think about the code
+- Before submitting changes you authored, review your own diff first
+- Catches spurious changes, incomplete work, and things missed while editing
+- Reviewing your own diff changes how you reason about the code — read it as the reviewer will
 
 ---
 
 ## Procedures
 
-- CI builds must **succeed**
-- **Ticket numbers** included in commits where needed
+- If **CI isn't passing**, investigate why before approving
+- Commits/PRs should **reference their tracking ticket** where one exists (e.g. a link to the issue)
 - Pull request descriptions must be **usefully descriptive** — "Fixed Bug 12345" is not sufficient; include a sentence or two about what changed and why
-- Two **Signed-off-by** tags from Canonical reviewers (use judgement: trivial patches may need only one)
 
 ---
 
@@ -54,6 +65,7 @@ Based on spec PE-ALL-005.
 - Large changesets can usually be **split** into smaller commits or separate tickets
 - They tend to combine related but not strictly connected changes
 - Use pragmatism — sometimes a large changeset is genuinely necessary
+- When a changeset is too large, still review it in full, but **recommend splitting** it (a `suggestion:`, not a blocker) — note where the natural seams are
 
 ### Scope
 - Does it address things **not needed** in the ticket? Call them out — good changes can go in a separate commit/ticket

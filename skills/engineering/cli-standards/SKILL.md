@@ -1,9 +1,11 @@
 ---
 name: cli-standards
 description: Canonical CLI design standards. Use when designing, implementing, or reviewing command-line interfaces. Covers grammar, commands, flags, parameters, feedback, colours, tables, verbosity, and tone of voice.
-license: default
+license: CC-BY-4.0
 compatibility: universal
 allowed-tools: Read Grep Glob
+metadata:
+  source: https://github.com/tonyandrewmeyer/charming-with-claude
 ---
 
 # Canonical CLI Standards

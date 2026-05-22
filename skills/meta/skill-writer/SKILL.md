@@ -2,9 +2,9 @@
 name: skill-writer
 description: Author, structure, and validate an agent skill. Use when creating a new SKILL.md, substantially rewriting an existing one, deciding what to bundle as scripts vs references, or importing an external skill. Covers frontmatter, body structure, depth gates (when to split a skill), the script-vs-checklist decision, prompt-injection hygiene, validation, and testing.
 allowed-tools: Read, Write, Edit, Bash
+license: Apache-2.0
 metadata:
   source: "Combined: tonyandrewmeyer/cantrip skill-writer (judgment, structure, hygiene) + canonical/copilot-collections generate-agent-skills (validate_skill.py, templates, output patterns, script-vs-checklist)"
-  license: Apache-2.0
 ---
 
 # Skill Writer
