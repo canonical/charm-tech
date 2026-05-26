@@ -12,7 +12,7 @@ Continuously iterate on the current branch until all CI checks pass and review f
 
 **Requires**: GitHub CLI (`gh`) authenticated.
 
-**Important**: All scripts must be run from the repository root directory (where `.git` is located), not from the skill directory. Reference scripts by their full path. On Claude Code, `${CLAUDE_SKILL_ROOT}` is set automatically to this skill's install directory. On other harnesses it won't be set — replace `${CLAUDE_SKILL_ROOT}` in the commands below with the actual path to this skill's directory.
+**Important**: Run all scripts from the repository root (where `.git` lives), not from the skill directory. Use the full path to each script — substitute `<skill-dir>` in the commands below with this skill's actual install path.
 
 ## Bundled Scripts
 
@@ -21,7 +21,7 @@ Continuously iterate on the current branch until all CI checks pass and review f
 Fetches CI check status and extracts failure snippets from logs.
 
 ```bash
-uv run ${CLAUDE_SKILL_ROOT}/scripts/fetch_pr_checks.py [--pr NUMBER]
+uv run <skill-dir>/scripts/fetch_pr_checks.py [--pr NUMBER]
 ```
 
 Returns JSON:
@@ -41,7 +41,7 @@ Returns JSON:
 Fetches and categorizes PR review feedback using the [LOGAF scale](https://develop.sentry.dev/engineering-practices/code-review/#logaf-scale).
 
 ```bash
-uv run ${CLAUDE_SKILL_ROOT}/scripts/fetch_pr_feedback.py [--pr NUMBER]
+uv run <skill-dir>/scripts/fetch_pr_feedback.py [--pr NUMBER]
 ```
 
 Returns JSON with feedback categorized as:
@@ -68,7 +68,7 @@ Stop if no PR exists for the current branch.
 
 ### 2. Gather Review Feedback
 
-Run `${CLAUDE_SKILL_ROOT}/scripts/fetch_pr_feedback.py` to get categorized feedback already posted on the PR.
+Run `<skill-dir>/scripts/fetch_pr_feedback.py` to get categorized feedback already posted on the PR.
 
 ### 3. Handle Feedback by LOGAF Priority
 
@@ -114,13 +114,13 @@ After processing each inline review comment, reply on the PR thread to acknowled
 
 **Reply format:**
 - 1-2 sentences: what was changed, why it's not an issue, or acknowledgment of declined items
-- End every reply with `\n\n*— Claude Code*`
-- Before replying, check if the thread already has a reply ending with `*- Claude Code*` or `*— Claude Code*` to avoid duplicates on re-loops
+- End every reply with a marker identifying the authoring agent on its own line, e.g. `\n\n*— <agent name>*`
+- Before replying, check if the thread already has a reply ending with such an agent marker (any `*— …*` or `*- …*` sign-off line) to avoid duplicates on re-loops
 - If the `gh api` call fails, log and continue — do not block the workflow
 
 ### 4. Check CI Status
 
-Run `${CLAUDE_SKILL_ROOT}/scripts/fetch_pr_checks.py` to get structured failure data.
+Run `<skill-dir>/scripts/fetch_pr_checks.py` to get structured failure data.
 
 **Wait if pending:** If review bot checks (sentry, warden, cursor, bugbot, seer, codeql) are still running, wait before proceeding—they post actionable feedback that must be evaluated. Informational bots (codecov) are not worth waiting for.
 
@@ -153,15 +153,15 @@ git push
 
 Poll CI status and review feedback in a loop instead of blocking:
 
-1. Run `uv run ${CLAUDE_SKILL_ROOT}/scripts/fetch_pr_checks.py` to get current CI status
+1. Run `uv run <skill-dir>/scripts/fetch_pr_checks.py` to get current CI status
 2. If all checks passed → proceed to exit conditions
 3. If any checks failed (none pending) → return to step 5
 4. If checks are still pending:
-   a. Run `uv run ${CLAUDE_SKILL_ROOT}/scripts/fetch_pr_feedback.py` for new review feedback
+   a. Run `uv run <skill-dir>/scripts/fetch_pr_feedback.py` for new review feedback
    b. Address any new high/medium feedback immediately (same as step 3)
    c. If changes were needed, commit and push (this restarts CI), then continue polling
    d. Sleep 30 seconds, then repeat from sub-step 1
-5. After all checks pass, do a final feedback check: `sleep 10`, then run `uv run ${CLAUDE_SKILL_ROOT}/scripts/fetch_pr_feedback.py`. Address any new high/medium feedback — if changes are needed, return to step 6.
+5. After all checks pass, do a final feedback check: `sleep 10`, then run `uv run <skill-dir>/scripts/fetch_pr_feedback.py`. Address any new high/medium feedback — if changes are needed, return to step 6.
 
 ### 8. Repeat
 

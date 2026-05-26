@@ -12,8 +12,6 @@ metadata:
 
 These guidelines define how code reviews should be conducted at Canonical. They focus on broadly applicable review techniques that are relevant to all projects.
 
-Based on spec PE-ALL-005.
-
 ---
 
 ## Soft Skills
@@ -35,11 +33,6 @@ optional ones at a glance (see [Conventional Comments](https://conventionalcomme
 - `question:` — seeking clarification, not necessarily a change
 - `praise:` — call out something done well
 Add `(non-blocking)` to any label when the distinction isn't obvious from the prefix.
-
-### Self-review
-- Before submitting changes you authored, review your own diff first
-- Catches spurious changes, incomplete work, and things missed while editing
-- Reviewing your own diff changes how you reason about the code — read it as the reviewer will
 
 ---
 
@@ -86,14 +79,3 @@ Add `(non-blocking)` to any label when the distinction isn't obvious from the pr
    - Check **leaf functions** first (no calls to other modified functions)
    - Work upward toward functions with more modified invocations
 4. **Walk through** new control flow, computational, or memory mapping behaviour — consider optimisation opportunities, especially on hot paths
-5. Use **linters and static analysis** as pre-commit hooks where available
-
----
-
-## Project-Specific Considerations
-
-For projects applying patches not yet upstreamed:
-- Patches should be of **upstream quality** and submitted upstream simultaneously
-- Include DEP3-style `Forwarded:` tags with links to upstream submissions
-- Ubuntu-originated patches: mark `UBUNTU: SAUCE:`
-- Partner-originated patches: mark `<VENDOR>: SAUCE:`
