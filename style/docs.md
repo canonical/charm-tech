@@ -2,7 +2,7 @@
 
 This is the documentation and docstring style we use across Charm Tech projects,
 regardless of the programming language. For language-specific code style, see
-[python-style.md](./python-style.md) and [go-style.md](./go-style.md).
+[python.md](./python.md) and [go.md](./go.md).
 
 New docs should follow these guidelines, unless there's a good reason not to.
 Sometimes existing docs don't follow these, but we're happy for them to be

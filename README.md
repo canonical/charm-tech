@@ -25,14 +25,14 @@ either link to it or copy from it.
 Our style guides reflect team decisions, and we add to them as things come up in
 code review.
 
-- [STYLE.md](./STYLE.md) — documentation and docstring style (language-agnostic:
-  British English, abbreviations, how to write great docs).
-- [python-style.md](./python-style.md) — Python code style.
-- [go-style.md](./go-style.md) — Go code style.
+- [style/docs.md](./style/docs.md) — documentation and docstring style
+  (language-agnostic: English spelling, abbreviations, how to write great docs).
+- [style/python.md](./style/python.md) — Python code style.
+- [style/go.md](./style/go.md) — Go code style.
 
 Other repos should link to these rather than maintaining their own copies. For
 example, an `AGENTS.md` or `CONTRIBUTING.md` can point at
-`https://github.com/canonical/charm-tech/blob/main/STYLE.md`.
+`https://github.com/canonical/charm-tech/blob/main/style/docs.md`.
 
 ### Reusable CI
 
@@ -60,8 +60,3 @@ jobs:
 
 Pin to a commit SHA (not `@main`) so a change here can't silently alter another
 repo's CI.
-
-## Licence
-
-This repository is licensed under the Apache License 2.0. See
-[LICENSE.txt](./LICENSE.txt).

@@ -2,7 +2,7 @@
 
 This is the Python code style we're converging on across the projects maintained
 by the Charm Tech team. For documentation and docstring style (which applies to
-all languages), see [the top-level STYLE.md](./STYLE.md).
+all languages), see [docs.md](./docs.md).
 
 We use Ruff for formatting, and run our code through the Pyright type checker. We
 try to follow [PEP 8](https://peps.python.org/pep-0008/), the official Python
