@@ -12,8 +12,6 @@ metadata:
 
 These standards define how Canonical CLI tools should look and behave. They originate from discussions with Canonical's senior tech leads and define best practice. All points must be strongly considered before contributing CLI code at Canonical.
 
-Based on spec DE013. See also: DE027 (Tools & Templates for CLI Design), DE028 (Canonical CLI Help).
-
 For full do/don't examples of every rule, see [examples.md](references/examples.md).
 
 ---

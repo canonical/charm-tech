@@ -73,12 +73,6 @@ here, but worth installing from their source:
 | :-- | :-- | :-- |
 | `documentation-review` (+ `documentation-build`, `documentation-diataxis`, `documentation-structure`, `documentation-style`, `documentation-verify`) | [canonical/copilot-collections](https://github.com/canonical/copilot-collections) | End-to-end documentation review. `documentation-review` orchestrates the other five, so install the whole set together. |
 
-## Notes
-
-- **`iterate-pr`** references `${CLAUDE_SKILL_ROOT}` (a Claude Code env var)
-  when locating its helper scripts. On other harnesses, point at the script
-  paths directly.
-
 ## Provenance and licences
 
 Skills are vendored from several sources. Each skill is the single source of
