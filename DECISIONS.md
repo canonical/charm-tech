@@ -1,15 +1,13 @@
 # Charm Tech decisions
 
-Lightweight decision records for the Charm Tech team — like
-[Architecture Decision Records](https://github.com/architecture-decision-record/architecture-decision-record)
-(ADRs), but kept in this one file. Each entry is short: what we decided, when,
-and (briefly) why.
+Lightweight decision records for the Charm Tech team, kept in this one file.
+Each entry is short: what we decided, when, and (briefly) why.
 
 Only accepted decisions are recorded (an accepted decision may be to say no to
-something). Each gets a dated heading you can link to; suffix `-a`, `-b`, … when
-a day has more than one.
+something). Each gets a dated heading you can link to; when a day has more than
+one decision, add a short descriptor suffix like `-govulncheck`.
 
-## 2026-05-20-a
+## 2026-05-20-govulncheck
 
 **Use govulncheck instead of Trivy in CI.** We'll stop using Trivy in CI for
 Pebble and Concierge, and rely on `govulncheck` instead. Trivy is still run as
