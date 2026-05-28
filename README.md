@@ -8,19 +8,17 @@ Rather than copy-pasting (and slowly diverging) the same style guides, security
 policies, and CI config across every repo, we keep the source of truth here and
 either link to it or copy from it.
 
-## Contents
-
-### Decisions
+## Decisions
 
 - [DECISIONS.md](./DECISIONS.md) — a running log of team decisions.
 
-### Specs
+## Specs
 
 - [specs/](./specs/) — cleaned, redacted copies of the team's Operator
   Engineering (OP) specifications. Authoritative versions live at
   [specs.canonical.com](https://specs.canonical.com).
 
-### Style guides
+## Style guides
 
 Our style guides reflect team decisions, and we add to them as things come up in
 code review.
