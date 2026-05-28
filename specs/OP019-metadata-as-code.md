@@ -51,7 +51,7 @@ We inject a part in charmcraft.yaml that ensures that before the charm is built 
 
 | from jinx import *
 class ExampleJinx(Jinx):
-    name = 'my-charm'  # the only mandatory attribute; the rest is optional     maintainer = 'pietro.pasotti@canonical.com'     summary = 'demonstration jinx'
+    name = 'my-charm'  # the only mandatory attribute; the rest is optional     maintainer = 'maintainer@example.com'     summary = 'demonstration jinx'
 
     def __init__(self, framework, key=None):
         super().__init__(framework, key) |

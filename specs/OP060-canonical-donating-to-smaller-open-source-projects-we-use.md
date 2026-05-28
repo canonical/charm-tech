@@ -42,5 +42,5 @@ Thanks.dev does all the hard work of reaching out to the maintainers, sending mo
 
 ![][image4]
 
-In terms of auditing, thanks.dev provides a public link for donors that lists a breakdown of their distributions to date, for example, [Sentry's](https://thanks.dev/o/sentry-241112). They also provide a public breakdown for recipients, for example, developer [Remy Sharp](https://thanks.dev/r/gh/remy). They distribute funds via Stripe, GitHub Sponsors ([public page](https://github.com/orgs/thnxdev/sponsoring#)), Open Collective ([public page](https://opencollective.com/thanks-dev)), and Wise.
+In terms of auditing, thanks.dev provides a public link for donors that lists a breakdown of their distributions to date, for example, [Sentry's](https://thanks.dev/o/sentry-241112). They also provide a public breakdown for recipients, for example, [an individual developer](https://thanks.dev/r/gh/remy). They distribute funds via Stripe, GitHub Sponsors ([public page](https://github.com/orgs/thnxdev/sponsoring#)), Open Collective ([public page](https://opencollective.com/thanks-dev)), and Wise.
 

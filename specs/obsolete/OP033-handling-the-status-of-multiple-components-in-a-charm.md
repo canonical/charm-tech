@@ -23,7 +23,7 @@ It is currently out of scope to modify Juju to support multiple status component
 There are two main approaches for solving this:
 
 1) A stateless approach, where each component registers a function that calculates that component's state, and the resulting, highest-priority status is calculated by calling each registered function.
-2) A stateful approach using stored state, where the resulting, highest-priority status is calculated from the individual stored status values. This is the approach taken by the [`StatusPool`](https://opendev.org/openstack/charm-ops-sunbeam/src/branch/main/ops_sunbeam/compound_status.py) class used by some OpenStack charms (and originally written by Pietro).
+2) A stateful approach using stored state, where the resulting, highest-priority status is calculated from the individual stored status values. This is the approach taken by the [`StatusPool`](https://opendev.org/openstack/charm-ops-sunbeam/src/branch/main/ops_sunbeam/compound_status.py) class used by some OpenStack charms (and originally written by a team member).
 
 There are pros and cons of each approach: the stateless approach is simpler to reason about and avoids problems with the stored state getting out of sync, but the stateful approach can be simpler for charmers to write.
 
@@ -143,7 +143,7 @@ class Webapp(ops.Object):
 
 ### Links and prior art
 
-* Pietro Pasotti's original [StatusPool class](https://github.com/PietroPasotti/compound-status)
+* A team member's original [StatusPool class](https://github.com/PietroPasotti/compound-status)
 * Sunbeam's [simplified version of StatusPool](https://opendev.org/openstack/charm-ops-sunbeam/src/branch/main/ops_sunbeam/compound_status.py), used in their [base charm](https://opendev.org/openstack/charm-ops-sunbeam/src/commit/6a7f80a2eee0d8626e9c09080b151f56a2f28b0e/ops_sunbeam/charm.py#L75) and [RelationHandler](https://opendev.org/openstack/charm-ops-sunbeam/src/commit/f9fff19596a784d60be40d7076f4c6f40f677fb1/ops_sunbeam/relation_handlers.py#L48)
 * The mysql-router-k8s charm does this for [two components in a stateless way](https://github.com/canonical/mysql-router-k8s-operator/compare/d28fbe139e02a7924805a96c6f192cc0a42c2214...d319d72bee63621959f6226b1ef9526b6f863076) ([update](https://github.com/canonical/mysql-router-k8s-operator/commit/608c094273afdb7adb8ad3e9ef975ca4f8af4865)).
 * [Notes from rich status meetings](https://docs.google.com/document/d/1TPGlFA3GCsWln_-2NLgMnQ2Do0ShoxnDUO933tGBFu0/edit#heading=h.ge3uo3pwlp2q) at Prague sprints
@@ -151,9 +151,9 @@ class Webapp(ops.Object):
 ### Notes from Data Platform team
 
 * From [this Mattermost thread](https://chat.charmhub.io/charmhub/pl/64mz7ehwf38y5beryzompwbjbw)
-* Marcelo notes that they do have the problem of one component stomping on another component's status. However, they work around it by looking at the current status: "As a workaround for that, we check in the next hooks if the charm is in a blocked state and either defer or completely ignore the hook code, by calling return in the beginning. It's possible that there are still some places in the charm code where it's not being checked and the blocked status may be overwritten by and Waiting or Active Status."
-* Raúl notes that they use a [centralized get_status() method](https://github.com/canonical/data-integrator/blob/3ded7aa858c932c16ac2e63525fa3c9ba18b6eaf/src/charm.py#L91): "centralized status setting on the data-integrator here. It's kind of the same situation, but you can order the returns and status setting in a way that makes things more expected."
-* Mehdi shows how they work around similar issues by introspecting the current status message, "In OpenSearch we assume that a hook setting a BlockedStatus will always get deferred, so we override it with the statuses from other hooks to show the progress of an operation. Then when the said operation is done we clear the specific related status (i.e: [clear_status(WaitingToStart)](https://github.com/canonical/opensearch-operator/blob/81baf02cc1f33945a5bbda1b29382aecc36ea14d/lib/charms/opensearch/v0/opensearch_base_charm.py#L187)). Then the hook that triggered a BlockedStatus gets retried, it sets back the status to Blocked."
+* A team member notes that they do have the problem of one component stomping on another component's status. However, they work around it by looking at the current status: "As a workaround for that, we check in the next hooks if the charm is in a blocked state and either defer or completely ignore the hook code, by calling return in the beginning. It's possible that there are still some places in the charm code where it's not being checked and the blocked status may be overwritten by and Waiting or Active Status."
+* A team member notes that they use a [centralized get_status() method](https://github.com/canonical/data-integrator/blob/3ded7aa858c932c16ac2e63525fa3c9ba18b6eaf/src/charm.py#L91): "centralized status setting on the data-integrator here. It's kind of the same situation, but you can order the returns and status setting in a way that makes things more expected."
+* A team member shows how they work around similar issues by introspecting the current status message, "In OpenSearch we assume that a hook setting a BlockedStatus will always get deferred, so we override it with the statuses from other hooks to show the progress of an operation. Then when the said operation is done we clear the specific related status (i.e: [clear_status(WaitingToStart)](https://github.com/canonical/opensearch-operator/blob/81baf02cc1f33945a5bbda1b29382aecc36ea14d/lib/charms/opensearch/v0/opensearch_base_charm.py#L187)). Then the hook that triggered a BlockedStatus gets retried, it sets back the status to Blocked."
 
 ### Notes from Kubeflow team
 

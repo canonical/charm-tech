@@ -44,4 +44,4 @@ This spec is essentially a reframing of some of the ideas and comments in the [M
 
 ## History
 
-* 27 Oct 2023: Rejected by [Ben Hoyt](mailto:ben.hoyt@canonical.com) as not touched / too old / never implemented.
+* 27 Oct 2023: Rejected by a team member as not touched / too old / never implemented.

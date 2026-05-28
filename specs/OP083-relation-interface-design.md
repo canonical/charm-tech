@@ -1097,7 +1097,7 @@ For the exception case, most charms would stringify the exception and stuff that
 ### Interface upgrades
 
 This is the first time that the interface upgrade strategy is suggested, especially across teams.
-(Do correct [Dima Tisnek](mailto:dima.tisnek@canonical.com) if he's wrong).
+(Please correct the author if this is wrong).
 
 ### Testing
 

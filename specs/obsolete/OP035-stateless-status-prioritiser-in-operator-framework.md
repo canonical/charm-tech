@@ -157,7 +157,7 @@ class Webapp(ops.Object):
 
 ## Notes
 
-### Notes from Andrew Scribner's experience with StatusPrioritiser
+### Notes from a team member's experience with StatusPrioritiser
 
 * I've been trying to write a base charm for the kubeflow team. it is largely an extension/refactor of sunbeam's base charm, but addresses a few blockers I hit when trying to use theirs.  What you might find interesting is that I pilfered your POC Prioritiser (thanks!!) and used it in the implementation.  So far, I'm loving it
 * I thought I'd dislike the stateless model when I first heard of it, but I'm now a convert.  It felt more natural than the stateful StatusPool that Sunbeam uses
@@ -178,7 +178,7 @@ class Webapp(ops.Object):
     `...`
 
 `# Stateful syntax suggestion:`
-`# Ben's note: I don't think this is possible because self.unit.status is a property`
+`# Note: I don't think this is possible because self.unit.status is a property`
 `#             and hence a StatusBase value.`
 `self.unit.status['db'] = BlockedStatus('database is blocked')`
 

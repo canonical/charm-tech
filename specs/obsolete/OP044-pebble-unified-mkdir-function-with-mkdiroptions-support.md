@@ -16,7 +16,7 @@ Pebble has a command `mkdir` that creates directories. However, the implementati
 
 Now there is a need to add support for a new flag so that when creating directories, the permission won't be affected by [`umask`](https://man7.org/linux/man-pages/man2/umask.2.html) settings. See the [issue here](https://github.com/canonical/pebble/issues/372). There was already a similar implementation for writing files ([issue](https://github.com/canonical/pebble/issues/80), [PR](https://github.com/canonical/pebble/pull/111)), but doing similar things to mkdir means adding even more chaos into the existing functions, public or private, see an initial implementation [here](https://github.com/canonical/pebble/pull/405).
 
-So, as suggested by [Ben Hoyt](mailto:ben.hoyt@canonical.com), since the function signatures, as well as the number of functions in the implementation, are getting out of control, there is a need to design a better function to unify all these mkdir functions with options defined in a struct.
+So, as suggested by a team member, since the function signatures, as well as the number of functions in the implementation, are getting out of control, there is a need to design a better function to unify all these mkdir functions with options defined in a struct.
 
 This will also close [issue 372](https://github.com/canonical/pebble/issues/372).
 

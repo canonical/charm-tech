@@ -16,7 +16,7 @@ Index
 	Status
 	Created
 	Implementation
-	Tony Meyer
+	Person
 	Drafting
 	Apr 7, 2026
 

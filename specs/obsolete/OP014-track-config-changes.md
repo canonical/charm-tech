@@ -14,10 +14,6 @@
 
 *The Charmed Operator Framework*
 
-| `Version` | `Date` | `Author(s)` |  `CommentsProposal for review.` |
-| :---- | :---- | :---- | :---- |
-| `0.2` | `2022-01-20` | `Robert Gildein` |  |
-
 ## Overview
 
 `The goal is to provide the functionality to obtain values of previous config, which gives the user the ability to respond independently to each configuration option change in the config. This functionality is provided on older charms via` config.previous `function, however this is limited only for previous values and does not provide a whole history of changes that could be used to rollback. An example for basic use is restarting a service, and only if the value associated with that service has changed.`

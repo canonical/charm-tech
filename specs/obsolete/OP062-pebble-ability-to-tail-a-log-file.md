@@ -190,7 +190,7 @@ I've verified that tail -F handles almost every corner case I could throw at it:
 
 Promptail comes with more functionality: log labels, trying to parse common log formats, including JSON and compressed files... but then again we don't include these features in this proposal.
 
-Case in point: the LogProxyConsumer class that injects promtail has been deprecated in the loki_push_api charm lib. The recommended replacement is the LogForwarder class. The container is expected to have a secondary tail -F service (or equivalent) if the workload logs to files (confirmed with Leon).
+Case in point: the LogProxyConsumer class that injects promtail has been deprecated in the loki_push_api charm lib. The recommended replacement is the LogForwarder class. The container is expected to have a secondary tail -F service (or equivalent) if the workload logs to files (confirmed with a team member).
 
 Another case in point: the Rust uutils coreutils project that is meant to replace GNU coreutils in Ubuntu includes a tiny but fully functional `tail` replacement at 1.5MB for single binary (Linux, release build) or 12MB for the full coreutils suite.
 
@@ -235,17 +235,3 @@ Doesn't bring additional value directly, as Pebble already reports the current p
 #### Monitoring
 
 Each tailed path could be a subject of a monitoring entry: number of log records emitted. That would help in both debugging (e.g. misnamed path, dead/stuck service) as well as overall performance monitoring. I feel that inclusion is premature at this point.
-
-## Changelog
-
-| Date | Status | Author(s) | Comment |
-| :---- | :---- | :---- | :---- |
-| 2025-03-07 | Braindump | [Dima Tisnek](mailto:dima.tisnek@canonical.com) | Initial brain dump |
-| 2025-04-01 | Pending Review | [Dima Tisnek](mailto:dima.tisnek@canonical.com) | Dropped tailing folders; drilled into rationale and alternatives; switched from arrays to objects in config.
-First go / no go review:
-[Harry Pidcock](mailto:harry.pidcock@canonical.com)
-[Fred Lotter](mailto:fred.lotter@canonical.com)
-[Ben Hoyt](mailto:ben.hoyt@canonical.com)
-[Simon Aronsson](mailto:simon.aronsson@canonical.com) |
-| 2025-04-08 | Rejected | [Dima Tisnek](mailto:dima.tisnek@canonical.com) | Rejected.
-A paragraph has been added that describes rejection rationale and the proposed workaround. |

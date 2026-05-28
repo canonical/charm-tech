@@ -112,7 +112,7 @@ When running an action, the action is run on a specific unit; for example, `juju
 
 ### Additional Notes
 
-This functionality was requested by [Robert Gildein](mailto:robert.gildein@canonical.com) in [canonical/operator:#762](https://github.com/canonical/operator/issues/762).
+This functionality was requested by a community member in [canonical/operator:#762](https://github.com/canonical/operator/issues/762).
 
 #### Comparative Implementation
 

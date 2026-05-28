@@ -133,15 +133,8 @@ Alternatively, we could consider much smaller changes:
 * **Write the state on an interval** if it's changed (for example, 100ms or 1s) instead of on every State.Unlock call. Writes to state would no longer be synchronous with the main code, again removing the durability guarantee.
   * *NOTE from review meeting:* strong push-back against removing the durability guarantee.
 * **Use multiple files or appendable files** to reduce the size and scope of writes. However, this quickly gets into "writing our own database" territory.
-* *NOTE from review meeting:* Consider having an UnlockNonDurable() where the *caller* can specify "durability doesn't matter here". [Ben isn't convinced this would help much: most of the writes are recording changes, which need to be durable (if anything does).]
-* *NOTE from review meeting*: broad agreement from the Juju team to allow 2 or 3 failures for the Kubernetes liveness check. Gustavo is in strong agreement with this: increasing the number of allowed failures or the timeout, or both.
+* *NOTE from review meeting:* Consider having an UnlockNonDurable() where the *caller* can specify "durability doesn't matter here". [A team member isn't convinced this would help much: most of the writes are recording changes, which need to be durable (if anything does).]
+* *NOTE from review meeting*: broad agreement from the Juju team to allow 2 or 3 failures for the Kubernetes liveness check. A team member is in strong agreement with this: increasing the number of allowed failures or the timeout, or both.
 * *NOTE from review meeting:* consider an embedded databases other than SQLite.
   * We just want a tool where we don't have to write the whole world when you change one variable or add one item.
   * [BoltDB](https://github.com/boltdb/bolt) was one option mentioned (likely using [bbolt](https://github.com/etcd-io/bbolt), etcd's fork). [Comparison of Badger vs LMDB vs Bolt.](https://dgraph.io/blog/post/badger-lmdb-boltdb/)
-
-## Changelog
-
-| Date | Status | Author(s) | Comment |
-| :---- | :---- | :---- | :---- |
-| 2024-03-04 | Braindump | [Ben Hoyt](mailto:ben.hoyt@canonical.com) | Initial brain dump |
-| 2024-03-06 | Approved | [Ben Hoyt](mailto:ben.hoyt@canonical.com) | Updated with notes from 5 March review meeting (marked "NOTE from review meeting"). Marked as Approved, even though it's not a spec as such, as their was broad agreement we need to do this work, and put two items on Charm Tech's 24.10 roadmap. |

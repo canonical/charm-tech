@@ -58,7 +58,7 @@ Pebble only matches against the file basename itself - not the directories the f
 
 ### Discussions
 
-**Notes from 1 April (Ben/Robert):**
+**Notes from 1 April (team review):**
 
 * Ignore dotfiles by default with a kwarg to enable copying them.
 * Kill FileInfo usage now that users don't usually interact with the _many methods directly.
@@ -83,7 +83,7 @@ model.Container:
           include_dotfiles=False)
 * def list_recursive: private or not? - maybe private for now.
 
-**Notes from 10 May (Gustavo, Robert, Pietro):**
+**Notes from 10 May (team review):**
 
 * Let's limit scope to what we know for sure is super useful/needed
   * dump pull/push_many

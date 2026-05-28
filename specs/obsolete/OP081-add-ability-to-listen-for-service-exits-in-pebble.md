@@ -24,7 +24,7 @@ Currently, when a service exits, Pebble offers four choices, each separately con
 TODO:
 
 * Talk to the people about the motivation for the big solution, maybe not necessary.
-* Verify with Ben/networking that this functionality is still required - and in particular get more details about exactly what sort of things needs to happen between the service exit and a restart.
+* Verify with a team member / networking that this functionality is still required - and in particular get more details about exactly what sort of things needs to happen between the service exit and a restart.
 
 This does not allow for custom, more complex behaviour. For example, in SONiC on Ubuntu (currently using supervisord but wanting to change to Pebble), the service exit behaviour is stored in an external configuration database. When a service exits, a script is run that uses the database to decide what to do next, via [supervisord's events system](https://supervisord.org/events.html).
 

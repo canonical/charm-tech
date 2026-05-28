@@ -113,7 +113,7 @@ This will help to ensure that there is a consistent charming ecosystem.
 
 #### Integration with Charmhub
 
-If the proof of concept involving a few libraries is deemed a success, and the community of charmers agree to move this forward, any move must be coordinated with [Luke Wesley-Holley](mailto:luke.wesley-holley@canonical.com)'s team to ensure that we don't (even temporarily) lose discoverability/visibility of libraries on Charmhub.
+If the proof of concept involving a few libraries is deemed a success, and the community of charmers agree to move this forward, any move must be coordinated with the Charmhub store team to ensure that we don't (even temporarily) lose discoverability/visibility of libraries on Charmhub.
 
 #### Reference Material
 

@@ -174,7 +174,7 @@ def test_prometheus_scrape_relation_with_prometheus_tester():
 * **Class API:** We would start with the class-based API described above. If needed, we could have a default `jubilant.juju = Juju()` object at the top level for simple use cases. Users would then write `from jubilant import juju` and `juju.deploy()`.
 * **Versions of Juju:** The initial version of the library would support Juju 3 and Juju 4 (whose CLI will likely be 100% compatible with Juju 3's CLI).
   * Before Juju 5 comes out we'd design a way to handle versioning.
-  * I (Ben) feel strongly we want to preserve the "API is 1:1 with the Juju command line", so that would mean one version per major Juju version, rather than having lots of if/else smarts in the library to patch over version differences.
+  * I feel strongly we want to preserve the "API is 1:1 with the Juju command line", so that would mean one version per major Juju version, rather than having lots of if/else smarts in the library to patch over version differences.
   * We could have a new version of the lib, say jubilant5, to handle this.
   * Or we could have a compatibility layer like jubilant.compat that had helpers to do this.
   * We don't want to repeat the mistake of python-libjuju versioning, where they tried to tie it to the version of Juju, which versions such as 3.5.2.1. Most of us see this as a mistake.
@@ -182,19 +182,19 @@ def test_prometheus_scrape_relation_with_prometheus_tester():
 ### Not in scope
 
 * **No setting up infrastructure** or installing Juju. This should be done by the test runner, for example in a GitHub Action, by `spread`, or by `charmcraft test`. This library assumes the "juju" command is already in the path and a controller has been created.
-  * For this, see Jon's [concierge](https://github.com/jnsgruk/concierge/tree/main) tool and an [example](https://github.com/jnsgruk/zinc-k8s-operator/pull/284) using it in zinc-k8s-operator.
+  * For this, see a team member's [concierge](https://github.com/jnsgruk/concierge/tree/main) tool and an [example](https://github.com/jnsgruk/zinc-k8s-operator/pull/284) using it in zinc-k8s-operator.
 * **No packing the charm.** `charmcraft pack` will be executed by the infrastructure or script running the integration tests.
 
 ## Further Information
 
-* [Pietro's Guru library](https://github.com/PietroPasotti/guru/blob/main/guru/guru.py)
+* [A team member's Guru library](https://github.com/PietroPasotti/guru/blob/main/guru/guru.py)
   * Guru is similar in wrapping the Juju CLI with Pythonic functions (though I hadn't actually looked at Guru before writing this up).
   * It includes tools for deploying from a git repo, status condition classes, and various helper methods to set up a matrix of integrations.
   * I'd like to go back to first principles and simplify a lot of that down.
   * However, the basic concept is roughly the same!
-* [Jon's juju.py and integration tests PoC on zinc-k8s-operator](https://github.com/jnsgruk/zinc-k8s-operator/pull/273/files)
-* [Pietro's additions to juju.py](https://github.com/canonical/tempo-coordinator-k8s-operator/blob/a487211b1afe6f2370af974089cc1c26ba2b9922/tests/integration/juju.py): this is fairly close to this spec, and has some good inspiration for fixtures and the like (conftest.py).
-* [Dylan's jtest library](https://github.com/dstathis/jtest)
+* [A team member's juju.py and integration tests PoC on zinc-k8s-operator](https://github.com/jnsgruk/zinc-k8s-operator/pull/273/files)
+* [A team member's additions to juju.py](https://github.com/canonical/tempo-coordinator-k8s-operator/blob/a487211b1afe6f2370af974089cc1c26ba2b9922/tests/integration/juju.py): this is fairly close to this spec, and has some good inspiration for fixtures and the like (conftest.py).
+* [A team member's jtest library](https://github.com/dstathis/jtest)
 
 ### Findings from existing integration tests
 

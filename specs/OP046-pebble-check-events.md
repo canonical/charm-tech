@@ -115,7 +115,7 @@ def _on_check_recovered(self, event: ops.PebbleCheckRecoveredEvent):
 # tests/unit/test_charm.py
 
 def test_check_failed_harness(harness: testing.Harness):
-    # Ben: consider higher-level APIs like this:
+    # Consider higher-level APIs like this:
     harness.fail_check('container', 'check'[, failures=3])
     harness.recover_check('container', 'check')
     # What it would like without adding anything:

@@ -64,7 +64,7 @@ class MyCharm(CharmBase):
 
 ## Previous discussion
 
-We previously proposes two sets of port APIs, one on Application and one on Unit, to handle the application case (for K8s) and the per-unit case (for machine charms). We also supported port ranges and the "endpoints" functionality. However, after discussion with Gustavo, Jon, and Ian (15 Feb 2023), we decided to simplify as follows - for simplicity, but also so that K8s and machine charms can use the same API (better for "universal charms").
+We previously proposes two sets of port APIs, one on Application and one on Unit, to handle the application case (for K8s) and the per-unit case (for machine charms). We also supported port ranges and the "endpoints" functionality. However, after discussion with the team (15 Feb 2023), we decided to simplify as follows - for simplicity, but also so that K8s and machine charms can use the same API (better for "universal charms").
 
 * Only add the Unit methods for now (open_port, close_port, opened_ports), not the Application ones, and make them work for K8s and machine charms. Both types of charms will call Unit.open_port() without an is-leader check. This will involve changes on the Juju side:
   * For K8s charms, remove the Juju is-leader check, and make Juju update the service definition to open the *union* of all ports requested. When close-port is called, Juju would only update the service definition to close the port when all units have asked for it to be closed. This is a fairly good experience on both charm types.
@@ -78,19 +78,10 @@ Also: allow both lowercase and uppercase protocol ( 'TCP' or 'tcp'), but guide p
 
 ## Open questions
 
-* Ryan Barry's idea for an [open-port event](https://github.com/canonical/operator/issues/179#issuecomment-1420488689).
+* A team member's idea for an [open-port event](https://github.com/canonical/operator/issues/179#issuecomment-1420488689).
   * If user opens port (using hook tool) from Juju CLI, charm has no way to know.
 
 ## Additional Information
 
 * The [`open-port` functionality](https://github.com/juju/charm-helpers/blob/7d443d8a628763414455838ca28fd8beeea03005/charmhelpers/core/hookenv.py#L830) in the charm-helpers library.
 * [Work-in-progress implementation in ops.](https://github.com/canonical/operator/pull/905)
-
-## History
-
-| Date | Status | Author(s) | Comment |
-| :---- | :---- | :---- | :---- |
-| 2023-02-15 |   | Ben Hoyt | Revised after spec discussion with Gustavo, Jon S, and Ian. |
-| 2023-02-09 | Revisions | Ben Hoyt | Revised API after discussion with John M. |
-| 2023-02-08 | Initial spec | Ben Hoyt |  |
-| Aug 31, 2023 | Completed | Ben Hoyt | Implemented and shipped in https://github.com/canonical/operator/pull/905 |

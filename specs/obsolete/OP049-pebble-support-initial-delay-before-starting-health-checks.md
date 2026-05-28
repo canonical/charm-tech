@@ -42,6 +42,6 @@ Before the initial-delay time has passed, the pebble checks command should retur
 ## Further Information
 
 * [A simple PoC code from a contributor](https://github.com/canonical/pebble/pull/487)
-* [Another PoC from Ben](https://github.com/canonical/pebble/issues/145#issuecomment-1235000796)
+* [Another PoC](https://github.com/canonical/pebble/issues/145#issuecomment-1235000796)
 * Some issues from users: [here](https://github.com/canonical/pebble/issues/145#issuecomment-1232889239), [here](https://github.com/canonical/pebble/issues/145#issuecomment-2289229958) and [here](https://github.com/canonical/pebble/pull/487)
 * Jira issue: [https://warthogs.atlassian.net/browse/CHARMTECH-220](https://warthogs.atlassian.net/browse/CHARMTECH-220)
