@@ -1,0 +1,423 @@
+# OP086 — Bridge pytest and spread testing in charms
+
+| Field | Value |
+| --- | --- |
+
+Index
+	OP086
+
+
+
+
+	Title
+	Bridge pytest and spread testing in charms
+	Type
+	Author(s)
+	Status
+	Created
+	Implementation
+	Person
+	Drafting
+	Apr 7, 2026
+
+
+	Reviewer(s)
+	Status
+	Date
+
+
+	Person
+	Pending Review
+	Date
+
+
+Abstract
+Short description of the issue being addressed. Limit this to a couple of sentences.
+Rationale
+Reasons why the specification should be accepted. It should explain why the existing state, if any, is inadequate to address the issue being handled. If possible, use cases should be included to help define and explain the goal.
+
+Omit that section (rather than presenting silly reasoning) if there's no good motivation for the specification, or if it is completely obvious. Note that lack of motivation is a good reason to reject specifications.
+Specification
+Draft amendments to Ops docs
+The key message: spread doesn't replace pytest -- it wraps it, handling the environment setup (VM provisioning, Juju bootstrap, substrate installation) so that integration tests run in a clean, reproducible environment.
+Amendment 1: docs/explanation/testing.md
+Add a new section between "Integration testing" and "Continuous integration". Also update the CI section.
+New section: "Running integration tests with spread"
+Insert after the "Integration testing" section (after the examples list, before ## Continuous integration):
+
+(spread-testing)=
+### Running integration tests with spread
+
+Integration tests require a Juju controller and a cloud substrate (LXD for machine charms, MicroK8s or Canonical K8s for Kubernetes charms). Setting this up manually is error-prone and time-consuming. Spread automates this by provisioning a clean environment, bootstrapping Juju using [Concierge](https://github.com/canonical/concierge), and running your integration tests inside it.
+
+Spread is an **infrastructure orchestration layer**, not a test framework. Your tests are still written in Python with pytest, [Jubilant](intersphinx link), and [pytest-jubilant](https://github.com/canonical/pytest-jubilant). Spread handles:
+
+- Environment provisioning: Creating an LXD VM (for local development) or configuring a CI runner.
+- Juju bootstrap: Installing Juju and the cloud substrate via Concierge.
+- Charm building: Packing the charm and making it available as `CRAFT_ARTIFACT`.
+- Per-module parallelism: Each `test_*.py` module becomes a separate spread job that can run in parallel in CI.
+- Cleanup: Tearing down the environment after tests complete.
+
+`charmcraft` provides a `test` command that runs spread for you.
+
+The flow that `charmcraft test` invokes is:
+
+1. Pack the charm
+2. Provision a VM or configure the CI runner
+3. Install Juju and the substrate via Concierge
+4. For each test module:
+   Run: CHARM_PATH=<charm> tox run -e integration -- tests/integration/<module>.py
+5. Clean up the environment
+
+If you initialised your charm with `charmcraft init`, your project already includes a `spread.yaml` and a default spread task. See {ref}`run-integration-tests-with-spread` for how to run your tests with spread.
+
+#### When to use spread
+
+Use spread when you want:
+
+- Reproducible environments: Each test run starts from a clean VM with a fresh Juju controller. No leftover state from previous runs.
+- Parallel CI execution: Each test module runs as a separate CI job, reducing total wall-clock time.
+- Local development parity: The same spread configuration works both locally (via LXD VMs) and in CI (via GitHub Actions runners).
+
+You don't need spread to run integration tests. You can always set up Juju manually (or with Concierge) and run `tox -e integration` directly. Spread is most valuable when you have multiple test modules and want automated, parallel CI execution.
+
+#### Tools
+
+- [`charmcraft test`](intersphinx link here) (bundled with the charmcraft snap)
+- [Concierge](https://github.com/canonical/concierge) for Juju and substrate bootstrap
+- [spread](https://github.com/snapcore/spread) (the underlying test runner)
+```
+Updated CI section
+Replace the existing ## Continuous integration section with:
+
+## Continuous integration
+
+Typically, you want tests to run automatically against any PR into your repository's main branch. Continuous deployment is out of scope for this page, but we will look at how to set up continuous integration.
+
+### Unit tests
+
+Create a file called `.github/workflows/ci.yaml`. To include a job that runs the `tox` `unit` environment:
+
+```yaml
+name: Tests
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  unit-test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Set up uv
+        uses: astral-sh/setup-uv@7
+      - name: Set up tox and tox-uv
+        run: uv tool install tox --with tox-uv
+      - name: Run tests
+        run: tox -e unit
+```
+
+### Integration tests with spread
+
+If your charm has a `spread.yaml` (generated by `charmcraft init`), you can use `charmcraft.spread` to run integration tests in CI. Each test module runs as a separate parallel job:
+
+```yaml
+  collect-spread-jobs:
+    name: Collect spread jobs
+    runs-on: ubuntu-latest
+    outputs:
+      jobs: ${{ steps.collect.outputs.jobs }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Collect
+        id: collect
+        run: |
+          sudo snap install charmcraft --classic
+          jobs=$(charmcraft.spread -list craft | jq -Rsc 'split("\n") | map(select(. != ""))')
+          echo "jobs=$jobs" >> "$GITHUB_OUTPUT"
+
+  integration-test:
+    name: Integration test
+    needs:
+      - unit-test
+      - collect-spread-jobs
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        job: ${{ fromJSON(needs.collect-spread-jobs.outputs.jobs) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Run spread test
+        run: |
+          sudo snap install charmcraft --classic
+          charmcraft.spread -v "${{ matrix.job }}"
+```
+
+This dynamically discovers all test modules and runs each as an independent job. Adding a new `test_*.py` file in `tests/integration/` automatically adds a new CI job -- no workflow changes needed.
+
+### Integration tests without spread
+
+If you prefer not to use spread, you can run integration tests directly using Concierge and tox:
+
+```yaml
+  integration-test:
+    name: Integration tests
+    needs:
+      - unit-test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Set up environment
+        run: |
+          sudo snap install --classic concierge
+          sudo concierge prepare -p microk8s  # or: -p machine
+      - name: Pack charm
+        run: |
+          sudo snap install charmcraft --classic
+          charmcraft pack
+      - name: Run integration tests
+        run: |
+          uv tool install tox --with tox-uv
+          tox -e integration
+```
+
+This approach is simpler but runs all tests sequentially in a single job.
+Amendment 2: `docs/howto/write-integration-tests-for-a-charm.md`
+
+Add a new section at the end, after "Generate crash dumps":
+
+```markdown
+(run-integration-tests-with-spread)=
+### Run your tests with spread
+
+If your charm has a `spread.yaml` (generated by `charmcraft init`), you can use `charmcraft.spread` to run your integration tests in a clean, automatically provisioned environment.
+
+#### How it works
+
+`charmcraft.spread` does the following:
+
+1. Packs your charm (producing a `.charm` file).
+2. Provisions a VM (locally via LXD) or configures a CI runner.
+3. Installs Juju and the cloud substrate using [Concierge](https://github.com/canonical/concierge).
+4. Runs `tox -e integration` for each test module, passing the charm path via `CHARM_PATH`.
+5. Cleans up after the tests.
+
+Your tests don't need to change -- they use the same pytest fixtures (`charm`, `juju`) as when running `tox -e integration` directly.
+
+#### Run all tests locally
+
+```text
+charmcraft.spread
+```
+
+This provisions an LXD VM, bootstraps Juju, and runs all your integration tests inside it.
+
+#### List available test jobs
+
+```text
+charmcraft.spread -list craft
+```
+
+Each `tests/integration/test_*.py` module appears as a separate job. This is what CI uses to build its parallel matrix.
+
+#### Run a single test module
+
+```text
+charmcraft.spread -v "craft:ubuntu-24.04:spread/integration/test_charm"
+```
+
+#### What the spread files do
+
+`spread.yaml` configures:
+
+- The `craft` backend (how to provision and connect to the test environment).
+- A suite `spread/integration/` that installs Concierge and bootstraps Juju in the prepare phase.
+- Juju version variants for testing against multiple Juju releases.
+
+Each `spread/integration/<module>/task.yaml` runs a single pytest module:
+
+```yaml
+execute: |
+  pushd "${SPREAD_PATH}"
+  CHARM_PATH="${CRAFT_ARTIFACT}" tox run -e integration -- "tests/integration/test_charm.py"
+```
+
+`CRAFT_ARTIFACT` is provided by `charmcraft.spread` (the path to the packed `.charm` file). It's passed to your tests as `CHARM_PATH`, which the `charm` fixture in `conftest.py` reads.
+
+#### Adding test modules
+
+When you add a new test module (e.g., `tests/integration/test_ingress.py`), `charmcraft.spread` automatically discovers it and creates a corresponding spread job. No additional configuration is needed.
+
+> See also: {ref}`testing` for an overview of all testing types and how to set up CI.
+```
+
+Further Information
+Survey of existing spread use (in charms)
+There are seven charms in the standard Charm Tech collection that have a spread.yaml file.
+Group 1: Data Platform Charms (Full Integration Pattern)
+These four charms share a nearly identical spread architecture. They are the most mature and sophisticated users of spread in the charm ecosystem.
+
+Charms: postgresql-operator, postgresql-k8s-operator, pgbouncer-operator, pgbouncer-k8s-operator
+Common Architecture
+
+spread provisions VM/runner
+  → concierge bootstraps Juju + substrate (LXD or MicroK8s)
+    → charmcraftcache packs the charm
+      → each task.yaml runs: tox run -e integration -- "tests/integration/$TEST_MODULE" --model testing --alluredir="..."
+        → pytest (with pytest-operator) runs the actual test
+Backends
+All four define the same two adhoc backends:
+
+Backend
+	Type
+	Systems
+	Purpose
+	lxd-vm
+	adhoc
+	ubuntu-24.04
+	Local development (LXD VMs with cloud-config)
+	github-ci
+	adhoc, manual
+	Ubuntu-24.04, ubuntu-24.04-arm
+	CI (SSH into the runner itself)
+
+
+VM defaults: 4 CPUs, 8 GiB RAM, 20 GiB disk.
+Concierge Usage
+All use concierge.yaml + concierge prepare --trace:
+* VM charms (postgresql, pgbouncer): LXD provider, bootstrap by default
+* K8s charms (postgresql-k8s, pgbouncer-k8s): MicroK8s provider with addons (dns, hostpath-storage, rbac; pgbouncer-k8s also adds metallb)
+* All install jhack snap (latest/edge) with dot-local-share-juju connection
+* All set Juju model defaults: logging-config: <root>=INFO; unit=DEBUG
+Juju Version Variants
+All four use the same variant pattern:
+
+CONCIERGE_JUJU_CHANNEL/juju36: 3.6/stable
+CONCIERGE_JUJU_CHANNEL/juju29: 2.9/stable
+
+The prepare-each phase conditionally patches poetry.lock to swap python-libjuju for the juju29 variant (poetry add --lock juju@^2). ARM systems exclude the juju29 variant.
+Task Structure
+Each has one task.yaml per pytest test module under tests/spread/:
+
+Charm
+	Task Count
+	Examples
+	postgresql-operator
+	31
+	test_charm.py, test_backups_aws.py, ha_tests/test_async_replication.py
+	postgresl-k8s-operator
+	33
+	test_smoke.py, test_backups_gcp.py, test_ldap.py
+	pgbouncer-operator
+	16
+	test_charm.py, test_db.py, test_upgrade.py
+	pgbouncer-k8s-operator
+	12
+	test_charm.py, test_tls.py, test_expose_external.py
+
+
+Every task uses the same template:
+
+environment:
+  TEST_MODULE: <path>
+execute: |
+  tox run -e integration -- "tests/integration/$TEST_MODULE" --model testing --alluredir="$SPREAD_TASK/allure-results"
+artifacts:
+  - allure-results
+Backend/Variant Restrictions
+Tests that need CI secrets (AWS/GCP backup tests) exclude lxd-vm:
+
+backends:
+  - -lxd-vm  # Requires CI secrets
+
+Some tests exclude specific Juju versions or architectures:
+
+variants:
+  - -juju29  # Not compatible with Juju 2.9
+systems:
+  - -ubuntu-24.04-arm  # Not available on ARM
+Restore Optimization
+All four use a custom restore-each that directly destroys the Juju model and controller via CLI commands instead of running concierge restore. This is significantly faster (~50% time savings) since Concierge's restore tears down the entire environment.
+CI Pipeline
+All follow the same workflow pattern:
+1. Build charm (charmcraftcache or separate build job)
+2. spread -list github-ci → dynamic JSON matrix
+3. One GitHub Actions job per spread task × Juju version × architecture
+4. Allure report generation on gh-pages branch
+Notable Per-Charm Variations
+* postgresql-operator: Passes AWS/GCP/Ubuntu Pro/Landscape secrets; 3h kill-timeout
+* postgresql-k8s-operator: Similar secrets; LDAP test excludes ARM
+* pgbouncer-operator: PostgreSQL channel variant (juju36_pg16 for PostgreSQL 16/edge vs 14/edge default)
+* pgbouncer-k8s-operator: Also has PostgreSQL channel variant; adds metallb addon to MicroK8s
+Group 2: OpenSearch Operator (Extended Data Platform Pattern)
+Charm: opensearch-operator
+How It Differs from Group 1
+OpenSearch follows the same fundamental pattern as the data platform charms but is larger and more complex:
+* 44 task.yaml files -- the most of any charm surveyed
+* Task naming uses suffixes for parameterisation: test_backups.py-aws-small, test_backups.py-aws-large, test_backups.py-all-azure, test_backups.py-all-gcs, test_backups.py-all-microceph
+* Pytest markers for grouping: -m 'group(id="...")' for Allure grouping
+* Multi-cloud backup testing: AWS, Azure, GCS, MicroCeph as separate tasks
+* OAuth tests require special setup: Conditional MicroK8s + metallb networking
+* GitHub CI uses size-differentiated runners: self-hosted-linux-amd64-noble-large and self-hosted-linux-amd64-noble-xlarge (larger for plugins/backups)
+
+Otherwise: same backends (lxd-vm + github-ci), same concierge bootstrap, same `tox run -e integration` invocation, same Juju version variants (juju36/juju29), same restore optimization, same Allure reporting.
+Group 3: Documentation/Tutorial Testing Only
+These two charms use spread exclusively for validating documentation tutorials, not for running integration tests.
+
+Charms: synapse-operator, wordpress-k8s-operator
+Common Architecture
+spread provisions VM/runner
+  → concierge bootstraps MicroK8s
+    → tutorial markdown is parsed into spread tasks
+      → tasks execute tutorial steps as shell commands
+Backends
+Both define the same two backends:
+
+Backend
+	Type
+	Systems
+	multipass
+	adhoc
+	ubuntu-24.04-64 (4 CPUs, 8 GiB RAM, 50 GiB disk)
+	github-ci
+	adhoc
+	ubuntu-24.04-64
+
+
+Notable: these use Multipass (not LXD VMs) for local development, with a file-based instance counter and flock locking to prevent concurrent launch races (workaround for multipass#3336).
+Concierge Usage
+Both use inline concierge in the prepare phase:
+
+prepare: |
+  sudo snap install --classic concierge
+  sudo concierge prepare -p microk8s
+
+No concierge.yaml file -- just the -p microk8s preset.
+Suite Structure
+Both define a single suite tests/spread/ with summary "tutorial test". However:
+* Neither has any task.yaml files committed -- the tasks are generated dynamically from documentation by the canonical/operator-workflows docs_spread.yaml reusable workflow
+* The suite references charm/tests/spread/lib/cloud-config.yaml which doesn't exist in the repos
+Integration Tests (Separate from Spread)
+Both charms have mature pytest-based integration tests that run independently of spread:
+* synapse-operator: pytest + pytest-operator, invoked via tox -e integration, tests across modules (test_charm, test_s3, test_scaling, test_matrix_auth)
+* wordpress-k8s-operator: pytest + pytest-operator, dual Juju version testing (2.9 and 3.6)
+
+Spread does not invoke these tests -- it's used only for tutorial validation.
+Juju Version Variants
+No Juju version variants in spread configuration. Both use a single Juju version (3.6/stable via concierge).
+Key Patterns
+1. Every charm that uses spread for integration testing uses the same pattern: one task.yaml per pytest module, invoking tox run -e integration -- <module>. Spread is the infrastructure/orchestration layer; pytest is the test layer.
+2. Concierge is universal: all seven charms use concierge for environment bootstrap. The data platform charms use concierge.yaml for detailed configuration; the docs-only charms use the -p microk8s preset inline.
+3. The adhoc backend pattern is standard: LXD VMs (or Multipass) for local, ADDRESS localhost for CI. No charm uses spread's built-in cloud backends.
+4. Juju version matrix via spread variants is a data platform convention. The docs-only charms don't do this.
+5. Allure reporting is universal across the data platform charms. Every task collects allure-results and CI generates HTML reports on gh-pages.
+6. Fast restore (manual juju destroy-model instead of concierge restore) is used by all data platform charms as a performance optimization.
+7. Backend restrictions for secret-dependent tests (backups to AWS/GCP/Azure) are a common pattern -- these tests only run on github-ci where secrets are available.
