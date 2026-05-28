@@ -7,7 +7,6 @@ def validate_skill(path):
     skill_dir = os.path.basename(os.path.normpath(path))
     skill_md_path = os.path.join(path, 'SKILL.md')
     errors = []
-    warnings = []
 
     print(f"Validating skill: {skill_dir}...")
 
@@ -44,22 +43,11 @@ def validate_skill(path):
 
         # Repo convention: every skill declares a top-level 'license' (an SPDX
         # id) and a 'metadata.source' (the upstream it was vendored/adapted
-        # from). Advisory — warn rather than fail.
+        # from).
         if not re.search(r'^license:\s*(.+)$', frontmatter, re.MULTILINE):
-            warnings.append("Frontmatter missing top-level 'license' (SPDX id, e.g. Apache-2.0). Required by repo convention.")
+            errors.append("Frontmatter missing top-level 'license' (SPDX id, e.g. Apache-2.0). Required by repo convention.")
         if not re.search(r'^\s+source:\s*\S', frontmatter, re.MULTILINE):
-            warnings.append("Frontmatter missing 'metadata.source' (upstream URL). Required by repo convention.")
-
-    # 4. ADVISORY: Progressive Disclosure (Flexible)
-    # We check if they exist, but we do not fail if they don't.
-    has_refs = os.path.isdir(os.path.join(path, 'references'))
-    has_scripts = os.path.isdir(os.path.join(path, 'scripts'))
-
-    if not has_refs:
-        warnings.append("No 'references/' directory found. (Acceptable for simple skills).")
-    
-    if not has_scripts:
-        warnings.append("No 'scripts/' directory found. (Acceptable for pure-prompt skills).")
+            errors.append("Frontmatter missing 'metadata.source' (upstream URL). Required by repo convention.")
 
     # Final Report
     if errors:
@@ -68,9 +56,6 @@ def validate_skill(path):
         sys.exit(1)
     else:
         print("\n[PASS] Skill is valid.")
-        if warnings:
-            print("[INFO] Architectural Notes:")
-            for w in warnings: print(f"  ℹ️  {w}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Validate an Agent Skill.')

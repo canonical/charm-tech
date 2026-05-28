@@ -83,12 +83,17 @@ derives from the [OWASP Cheat Sheet Series](https://cheatsheetseries.owasp.org/)
 
 ## Contributing
 
-Author new skills with **`skill-writer`** and audit them with
-**`skill-scanner`** before opening a PR. Validate the layout with:
+Author new skills with **`skill-writer`**, which walks you through validating
+the layout (`validate_skill.py`) and auditing for hygiene issues
+(**`skill-scanner`**) as part of its own checklist. Before opening a PR, make
+sure those two checks pass:
 
 ```bash
 python3 skills/meta/skill-writer/scripts/validate_skill.py --path skills/<category>/<name>
 ```
+
+`validate_skill.py` must pass and `skill-scanner` must report no `HIGH`
+findings.
 
 Keep skills scoped to **maintaining our repos** (the criterion above), and
 keep them harness-agnostic.

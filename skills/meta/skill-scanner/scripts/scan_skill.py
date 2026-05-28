@@ -103,8 +103,10 @@ DANGEROUS_SCRIPT_PATTERNS: list[tuple[str, str, str]] = [
     (r"(?i)compile\s*\(.*exec", "Dynamic code compilation", "high"),
 ]
 
-# Domains commonly trusted in skill contexts
-TRUSTED_DOMAINS = {
+# Common, low-signal domains. URLs on these are suppressed to a count rather
+# than surfaced for review — this is about reducing noise, not vouching for the
+# content hosted there.
+COMMON_DOMAINS = {
     "github.com", "api.github.com", "raw.githubusercontent.com",
     "docs.sentry.io", "develop.sentry.dev", "sentry.io",
     "pypi.org", "npmjs.com", "crates.io",
@@ -350,18 +352,18 @@ def extract_urls(content: str, filepath: str) -> list[dict[str, Any]]:
             try:
                 # Extract domain
                 domain = url.split("//", 1)[1].split("/", 1)[0].split(":")[0]
-                # Check if root domain is trusted
+                # Check if the domain is a common, low-signal one
                 domain_parts = domain.split(".")
                 root_domain = ".".join(domain_parts[-2:]) if len(domain_parts) >= 2 else domain
-                trusted = root_domain in TRUSTED_DOMAINS or domain in TRUSTED_DOMAINS
+                common = root_domain in COMMON_DOMAINS or domain in COMMON_DOMAINS
             except (IndexError, ValueError):
                 domain = "unknown"
-                trusted = False
+                common = False
 
             urls.append({
                 "url": url,
                 "domain": domain,
-                "trusted": trusted,
+                "common": common,
                 "location": f"{filepath}:{line_num}",
             })
 
@@ -472,7 +474,7 @@ def scan_skill(skill_dir: Path) -> dict[str, Any]:
         sev = f.get("severity", "unknown")
         severity_counts[sev] = severity_counts.get(sev, 0) + 1
 
-    untrusted_urls = [u for u in all_urls if not u["trusted"]]
+    flagged_urls = [u for u in all_urls if not u["common"]]
 
     # Allowed tools analysis
     tools_info = None
@@ -501,8 +503,8 @@ def scan_skill(skill_dir: Path) -> dict[str, Any]:
         "total_findings": len(all_findings),
         "urls": {
             "total": len(all_urls),
-            "untrusted": untrusted_urls,
-            "trusted_count": len(all_urls) - len(untrusted_urls),
+            "flagged": flagged_urls,
+            "common_count": len(all_urls) - len(flagged_urls),
         },
         "description_body_overlap": round(overlap, 2),
     }
