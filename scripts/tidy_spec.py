@@ -16,8 +16,12 @@ Handles the high-confidence mechanical transformations:
     not from real `[text](url)` markdown links).
   - Strip the trailing footnote-definition block.
   - Strip the template boilerplate sections "Is it Done?",
-    "How to use a spec / is it ready?", "Spec History" and anything
-    after them.
+    "How to use a spec / is it ready?" and "Spec History". Each is removed
+    from its heading up to the next heading at the same or higher level, so
+    real content placed after boilerplate in the export (e.g. an "Extended
+    Rationale" tab following the Spec History table) is preserved.
+  - Collapse consecutive headings with identical text (a Google-Docs tab
+    title followed by the section's own heading).
   - Strip `**bold**` wrapping from heading lines and shift heading levels
     down by 1 so the script's own `# OPxxx — Title` is the sole h1.
   - Normalise curly quotes / dashes / ellipses.
@@ -262,18 +266,48 @@ def skip_after_metadata(lines: list[str], start: int) -> int:
     return j
 
 
-def strip_trailing_boilerplate(text: str) -> str:
+_HEADING_LEVEL_RE = re.compile(r"^(#{1,6})\s+\S")
+
+
+def heading_level(line: str) -> int | None:
+    """Return the heading level (1-6) for a markdown heading line, else None."""
+    m = _HEADING_LEVEL_RE.match(line)
+    return len(m.group(1)) if m else None
+
+
+def _heading_text(line: str) -> str:
+    """Normalise a heading line to bare lowercase text for matching."""
+    s = re.sub(r"^#+\s*", "", line.strip())
+    s = unwrap_inline(s)
+    s = re.sub(r"\s*\{#[^}]+\}\s*$", "", s)
+    return s.lower().rstrip(":")
+
+
+def strip_boilerplate_sections(text: str) -> str:
+    """Remove template boilerplate sections in place.
+
+    A boilerplate section runs from its heading up to the next heading at the
+    same or higher level (or end of file). Removing the section rather than
+    truncating to EOF preserves real content that the export places after
+    boilerplate, such as an "Extended Rationale" tab following the Spec
+    History table.
+    """
     lines = text.splitlines()
-    for idx, line in enumerate(lines):
-        # Normalise: strip leading `#`s, bold, trailing colon, lowercase.
-        s = line.strip()
-        s = re.sub(r"^#+\s*", "", s)
-        s = unwrap_inline(s)
-        s = re.sub(r"\s*\{#[^}]+\}\s*$", "", s)
-        s = s.lower().rstrip(":")
-        if s in BOILERPLATE_HEADINGS:
-            return "\n".join(lines[:idx]).rstrip() + "\n"
-    return text
+    out: list[str] = []
+    i = 0
+    while i < len(lines):
+        level = heading_level(lines[i])
+        if level is not None and _heading_text(lines[i]) in BOILERPLATE_HEADINGS:
+            i += 1
+            while i < len(lines):
+                inner = heading_level(lines[i])
+                if inner is not None and inner <= level:
+                    break
+                i += 1
+            continue
+        out.append(lines[i])
+        i += 1
+    return "\n".join(out)
 
 
 def strip_trailing_footnotes(text: str) -> str:
@@ -360,6 +394,32 @@ def normalise_headings(text: str) -> str:
     return "\n".join(out)
 
 
+def collapse_duplicate_headings(text: str) -> str:
+    """Drop a heading immediately followed by another heading with identical
+    text (only blank lines between). Google-Docs tab titles produce these:
+    a tab named "Extended Rationale" precedes the section heading
+    "Extended rationale".
+    """
+    lines = text.splitlines()
+    out: list[str] = []
+    i = 0
+    while i < len(lines):
+        if heading_level(lines[i]) is not None:
+            j = i + 1
+            while j < len(lines) and lines[j].strip() == "":
+                j += 1
+            if (
+                j < len(lines)
+                and heading_level(lines[j]) is not None
+                and _heading_text(lines[i]) == _heading_text(lines[j])
+            ):
+                i = j
+                continue
+        out.append(lines[i])
+        i += 1
+    return "\n".join(out)
+
+
 def redact(text: str) -> str:
     """Apply redaction mappings loaded from the local config file.
 
@@ -419,9 +479,10 @@ def tidy(src_text: str, src_path: Path) -> tuple[str, str]:
 
     body = strip_page_breaks(body)
     body = strip_trailing_footnotes(body)
-    body = strip_trailing_boilerplate(body)
+    body = strip_boilerplate_sections(body)
     body = strip_footnote_markers(body)
     body = normalise_headings(body)
+    body = collapse_duplicate_headings(body)
     body = unescape_markdown(body)
     body = redact(body)
     body = strip_trailing_whitespace(collapse_blank_lines(body)).strip() + "\n"

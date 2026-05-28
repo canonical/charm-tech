@@ -107,7 +107,7 @@ Note that extra care is needed when updating an existing charm library to practi
 
 Note that adopting or dropping custom `encoder=` and `decoder=` in `ops.Reladion.save/.load` is probably a breaking change. Either defer to the next major version, or provide a legacy code path.
 
-[Full rationale](#fixed-field-types-1)
+[Full rationale](#fixed-field-types-2)
 
 #### No mandatory fields
 
@@ -145,7 +145,7 @@ Please avoid "zero-valued" defaults like `username: str = ""`, as these tend to 
 
 Note that changing the default value has different meaning for the sender and the recipient (consider the initial handshake, empty databag → recipient's default; sender fills out the databag with defaults → sender's default; sender fills out real values → non-default) which means that it's hard to change the default value after the interface has been published.
 
-[Full rationale](#no-mandatory-fields-1)
+[Full rationale](#no-mandatory-fields-2)
 
 #### No field reuse
 
@@ -166,7 +166,7 @@ The deprecated annotation `foo: Annotated[str, Field(deprecated="...")]` is not 
 
  The annotation can be useful in the Python API, but is not recommended to deprecate fields on the wire.
 
-[Full rationale](#no-field-reuse-1)
+[Full rationale](#no-field-reuse-2)
 
 #### Collections
 
@@ -177,7 +177,7 @@ The sender must emit collections in some stable order.
 
 **Collections of primitive types** are strongly discouraged, because the collection elements cannot be extended. If the interface definition includes one, e.g. `foo: list[int]`, then the rules for the elements are fixed, and change to the semantics requires a new field `foo_new: list[...]`. See [the rationale and the alternative](#real-world-example).
 
-The charm library must not rely on the **order in the collection** it receives. See [the rationale](#collections-1).
+The charm library must not rely on the **order in the collection** it receives. See [the rationale](#collections-2).
 
 If the data needs to be keyed or ordered, consider adding a property into the individual objects in the collection:
 
@@ -226,7 +226,7 @@ class Bag(BaseModel):
 } |
 | :---- |
 
-The semantics and type of the key can never be changed. Instead, represent such data as an array of objects: `[{name, address}, {name, address}]`. See [the rationale](#collections-1).
+The semantics and type of the key can never be changed. Instead, represent such data as an array of objects: `[{name, address}, {name, address}]`. See [the rationale](#collections-2).
 
 An exception to this rule is when the data map key is a Juju entity with a well-known string key. For example `<unit-name>: <object>` or `<machine-id>: <object>` are acceptable.
 
@@ -260,7 +260,7 @@ The restrictions must be both documented and validated in the unit tests that ac
 
 Changes to the validation rules must be explicit, documented in release notes and/or change log of the charm library and bump the major/minor/micro versions of the charm library accordingly.
 
-[Rationale](#urls-and-uris-1)
+[Rationale](#urls-and-uris-2)
 
 #### Semantic grouping
 
@@ -328,7 +328,7 @@ def get_raw_password(...) -> str:
     ... |
 | :---- |
 
-Full [rationale](#secret-content-schema-1)
+Full [rationale](#secret-content-schema-2)
 
 ### Charm library
 
@@ -355,7 +355,7 @@ Relation databags should not be loaded at charm library initialisation time, but
 
 Exceptions can and should be used to report incorrect initialization (e.g. wrong relation name), or transient errors (hook command unexpectedly erroring out).
 
-[Rationale](#handle-bad-remote-data-1)
+[Rationale](#handle-bad-remote-data-2)
 
 #### Provide `.is_ready`
 
@@ -375,7 +375,7 @@ The specific shape of the API varies, here are some common examples:
 
 Note that this method/property doesn't provide additional information about what's wrong with the relation. See [Advances status](#advanced-status) below.
 
-[Rationale](#provide-.is_ready)
+[Rationale](#provide-is_ready-2)
 
 #### Advanced status
 
@@ -410,7 +410,7 @@ There are also other, related efforts:
 - `jhack sitrep`
 - Juju Doctor
 
-[Rationale](#advanced-status-1)
+[Rationale](#advanced-status-2)
 
 ### Testing
 
@@ -728,3 +728,398 @@ There was a discussion about exposing the contract each side of the relation pro
 Doing so would require charm libraries to be annotated with the interface version the data is published on and a set or a range of interface versions understood. This information would then percolate into charm metadata, for each relation. Something outside of the charm (Juju itself, or a scriptlet-based mechanism) would then example the proposed application upgrade (declared version info from the metadata of the currently deployed application, declared version info from the metadata of the proposed application version from charmhub, current active relations, and current version info from the metadata of the relation counterparts) and decide whether the application upgrade is allowed to proceed.
 
 The solution has not been defined yet, and work on this is too far ahead to consider in this spec.
+
+## Extended rationale
+
+Charm interfaces are often designed in the early stages of charming an application, when the "operational" complexity is not fully understood.
+
+That has its place, because as a company, we want to build something, deploy it, and iron out the kinks before offering a solution to customers.
+
+Therefore, we recommend designing the interfaces with the understanding that these interfaces will evolve. We're including a carefully chosen set of escape hatches to offer a fair balance between having a concrete interface today and flexibility to extend it tomorrow.
+
+### Databag Schema
+
+#### Fixed field types
+
+If schema is allowed to evolve, we must ensure that older and newer charms understand each other, that is they don't fail "randomly".
+Because charm authors cannot control application versions deployed by Juju users, type changes are forbidden, and evolution must be managed by adding new fields on minor version bumps and removing old ones on new major versions. This means that the type of the field can almost never be changed.
+
+**If a field type were widened**, the older charm would not understand the newer.
+
+**If a field type were narrowed**, the newer charm would not understand the older.
+
+**If a field type was changed** to something radically different, then the charms can't work together.
+
+Requiring all charm libraries to ignore unparseable fields, would put too much strain on the developers and make the charm library code hard to read: every field would need a custom validator and a set of tests to ensure that field is omitted.
+
+Minimum rule could be "no unrelated changes": meaning if I expect `foo: str` and you send me `foo: [1, 2, 3]`, it's OK for me to go in the error state.
+Which can then logically be extended one way (no widening or narrowing), which can then be extended both ways (as we never know which charm is newer).
+
+Other systems that follow this rule: Protobuf, Thrift, Avro.
+(with some caveats for primitive types for proto and thrift; different caveat for avro)
+
+##### Validators for field values
+
+What if a field `fqdn: str | ...` and its validator, `is_fqdn(...)`, receives an update?
+
+Call this out in release notes and change log. A change could be:
+
+* clearly a fix: for example, validated with a regexp which had a bug
+* middle ground: should be very narrow, tread carefully!
+* data format change: calls for a new field instead
+
+The last two require a version bump on the charm library, which probably leads to the new version being adopted by charms when they start working towards a new charmhub track.
+
+Additionally, be clear where the value comes from: is it computed by the counterpart or does it come from application config or similar "external" source that can be tweaked by the Juju user.
+
+#### No mandatory fields
+
+We never know which side of the relation is newer, and by how much.
+
+Thus, the recipient must be ready to handle both older and newer databags. Thus, some fields may be missing.
+
+One could argue that the recipient should just drop the entire databag in this case. That, however, would not be an improvement over the current state of charming.
+
+When the databag is large, the charm library doesn't know what slice of the databag is of interest to the charm. For example, `data_interfaces` supports these top-level databag keys:
+
+    `"database",`
+    `"subject",`
+    `"topic",`
+    `"index",`
+    `"plugin-url",`
+    `"prefix",`
+
+(in addition to special keys like `secret-ABC`, `status`, and `data`)
+
+For example, when a charm is interested in a PostgreSQL database, it would read the `database` field and when interested in a Kafka topic, it would read the `topic` field. Or it could read both.
+
+The same applies to subfields. For example, the `tracing` interface includes a message like:
+
+`receivers: [`
+  `{"type": "zipkin", "url": ...},`
+  `{"type": "otlp_json", "url": ...},`
+`]`
+
+It's reasonable to expect the inner object to eventually evolve (e.g. add some `"ca": str` field for HTTPS URLs). Or the `url` field to be replaced by some `url_set: [str]`. In order to support deploying newer traced charms with older COS, the new field cannot be mandatory.
+
+Other systems that follow this rule: Protobuf (everything is optional, both at top level and nested).
+
+Q: what about a scheme where relation has multiple states, e.g. `empty = {}`, `requested = {foo: str}`, `ready: {bar: int}`, and the recipient distinguishes the current relation state based on the schema data matches the databag content?
+
+A: Please use `.is_ready`
+
+#### No field reuse
+
+We aim to avoid confusion (unexpected behaviour) in older charms.
+
+Although a field has been removed from the current version of the interface definition and charm library that wraps the interface, there's no practical way to determine if there is still an application deployed that's running charm code that was built with the older version of this charm library, or vendored a charm library or implemented the older definition of the interface without a library.
+
+Therefore reusing a databag field brings uncertainty and a potential for incompatibility in production.
+
+We'd rather not require charm libraries to perform extensive testing against obsolete versions of the interface and libraries. Instead we require that removed fields are never reused.
+
+Other systems that follow this rule: [Protobuf](https://protobuf.dev/best-practices/dos-donts/#reuse-number) [Thrift](https://diwakergupta.github.io/thrift-missing-guide/#_versioning_compatibility)
+
+#### Collections
+
+To ensure that collections can be extended in the future, we settle on a single form: arrays of objects (in JSON representation).
+
+##### The case against arrays of primitive types
+
+Q: What if we have `ip_addresses: [str]`
+
+A: What happens when we stuff both IPv4 and IPv6 addresses into the array? Now the recipient needs to support two formats. What if the sender wants to include a CIDR or an address range? The recipient is surely unprepared for that.
+
+Thus, an array of a primitive type can only evolve through a new top-level key, e.g.:
+
+| ip_addresses: list[str]
+ip_address_ranges: list[str] |
+| :---- |
+
+##### The case against keeping the array order
+
+Q: What if we have `dns: [str]` with the implication that it's a list of DNS servers to try in order.
+
+A: What happens when we stuff both IPv4 and IPv6 addresses into the array? The recipient may only have a v4 or v6 address, and would filter the list to a v4-list or v6-list respectively. What does it mean then that it would use the DNS servers (index) `0,2,3,7,8` in one case and `1,4,5,6,9` in the other case?
+Regardless, wouldn't it be better to round-robin those servers anyway (stateful) or use a random server (stateless)?
+
+Q: What if we have `servers: [str]` which are the database server endpoints, with the semantics that the first is the primary and the rest are replicas?
+
+A: What if the recipient has to filter those, e.g. by server name length or subnet or which domain names can be resolved. It could end up with a list like `[server2, server3]` and the pole position (primary) bit is lost? We're forcing the recipient to convert the `[str]` list into something like `{primary: true, address: str}, {primary: false, address: str}, ...}`.
+
+Let's have developers express their intention directly in the schema.
+
+Q: What if we have `ca_chain: [str]` with PEM-encoded individual certificates as array elements, for example: `["A→B", "B→C", "C→D"]`
+
+A: That works for a simple case, however, consider what happens when the root-most intermediate CA is rolled over, we'd get: `["A1→B", "A2→B", "B→C", "C→D"]`. Likewise, intermediate CA subtree could be rolled over, for example: `["A1→B1", "A2→B2", "B1→C", "B2→C", "C→D"]`. On occasion, CAs are cross-signed: `["A1→A2", "A2→B", "B→C", "C→D"].`
+
+Real-life precedents: [Let's Encrypt](https://letsencrypt.org/2023/07/10/cross-sign-expiration). And [another one](https://letsencrypt.org/2024/04/12/changes-to-issuance-chains).
+
+When the elements are processed as opaque PEM blobs, the recipient can make neither heads nor tails of this. Instead, we're implicitly expecting the recipient (charm or workload) to decode the PEM blobs, reconstruct who signed whom, and then serve (typically) one linear intermediate chain to the clients. Or the workload may be configured to serve different chains per server name, relying on clients using SNI.
+
+Alternatively, we could force the provider to always issue a linear CA chain, which forces the provider to guess when the end user updates their CA list. That's opaque when the end user is an automated system. It was also famously hard when the clients were smart phones and some were on Android 7.0.
+
+Q: What if there is a natural key, for example: `allowed_users: ["a@c.cc", "b@c.cc"]`?
+A: Consider the longer form: `allowed_users: [{"email": "a@c.cc", "uid": 590}, {"email": "b@c.cc", "uid": 500}]`. Now it's no longer clear if the list should be ordered by email or user id. If the interface is in transition between email and user id keys, we'd have one (version of the) recipient use email and another uid. Then the provider serving this list to both would effectively inform the two recipients
+
+Q: The examples above show partial, not total loss of order.
+A: That's true, but there's not much left, is there?
+
+could be extended as:
+`["A1 signed B", "A2 also signed B", "B signed C", ...]`
+
+The semantics and type of the key can never be changed. See [the rationale](#collections-2).
+
+Meanwhile, note that the Juju databag is the complete representation of the resource.
+
+arrays with objects with special ordering field:
+Ordering property cannot easily be removed (b/c Python, workload).
+
+To do: it's about **consistency**, can't have two charms using `endpoint: URL` where one charm passes k8s service name and port as a base URL, and another a full public web URL with auth and query, as those two are not interchangeable. So we're asking for **precision**.
+
+Consider this simplified declaration in an existing charm library:
+`worker_ports: list[int] = Field(...)`
+
+The next version of the interface may also allow for port ranges. How can that be expressed?
+This specification advocates for an array of objects:
+`"worker_ports": [`
+    `{"port": 4242},`
+    `{"port-range": "1000-2000"},`
+    `{"cidr": "1.2.3.4/8", "port": 6767},`
+`]`
+
+Consider this declaration in an existing charm library:
+`allowed_endpoints: Optional[List[str]] = Field(description="...")`
+With an example:
+`"allowed_endpoints": ["about/app", "welcome"]`
+Although that's not explicitly stated, I assume these are URL path prefixes.
+
+The next version of the interface may also allow for:
+
+* exact URL paths
+* URL path regexp
+
+The interface, as it's declared now would have to be extended something like:
+`allowed_endpoints: Optional[List[str]] = ...`
+`allowed_exect_endpoints: Optional[List[str]] = ...`
+`allowed_endpoint_regexps: Optional[List[str]] = ...`
+
+This specification advocates to express the allow list as a list of objects instead:
+`"allowed_endpoints": [`
+    `{"path_prefix": "about/app"},`
+    `{"path_exact": "logout"},   # but not CSRF "logout/confirm"`
+    `{"path_regexp": "^error-4[0-9]{3}.html$"},`
+`]`
+
+##### The case against maps
+
+Q: What if someone expressed a container as a map, e.g.:
+`{"a@c.cc": {"name": "A"}, "b@c.cc": {"name": "Boo"}}`
+
+That is key can be any string (as is the case in JSON), and the values are all of the same shape.
+
+A: Consider if the schema needs to evolve with the respect of the key.
+Notice that the key is not explicitly typed, rather it's implicitly a string.
+Additionally, there's (presently) no validation for keys: do they have to be valid emails? Is a numeric key like `"42"` or an empty string `""` ok?
+The key doesn't have a semantic tag, or a name either.
+
+To make the keys first class citizens, represent the collection as follows:
+`[{"email": "a@c.cc", "name": "A"}]`
+
+##### Real world example
+
+Compare these two workload CLI/API versions:
+[https://velero.io/docs/v1.10/resource-filtering/](https://velero.io/docs/v1.10/resource-filtering/)
+[https://velero.io/docs/v1.18/resource-filtering/](https://velero.io/docs/v1.18/resource-filtering/)
+
+It starts so simple, "please include these **resources** (a list of strings)".
+However, since a namespace selector is also provided, and K8s resources are heterogeneous (some are scoped to a cluster, and others to a namespace), the API had to evolve.
+At some point, a toggle to "please include all **cluster resources** (Boolean)" was added.
+Later, separate settings to "please include these **namespaced resources** (a list of strings)" and "please include these **cluster resources** (a list of strings)" got added, and those cannot be used together with the older settings.
+
+A Juju relation interface design [https://github.com/canonical/charmlibs/pull/353](https://github.com/canonical/charmlibs/pull/353) attempted to follow the workload definition, starting with something that v1.10 supports. How can such an interface evolve to express the richer functionality later?
+
+Arguably, there's a case for an intersection between namespaces and resources.
+Then the data shape could start something like this at the interface design stage:
+
+| [{resource: "configmaps", namespace: "n1"},
+ {resource: "clusterroles"}] |
+| :---- |
+
+Note that it's not possible to safely extend `resources: list[str]`.
+
+#### URLs and URIs
+
+To leverage the convenience of URL strings, yet ensure that their usage is precise, the fields with URL values must be accompanied by documented semantics, a strict set of rules, and unit tests, so that the interface contract is fixed and predictable.
+
+This makes the breaking changes explicit.
+
+This also means that the relation counterpart has clear expectations.
+
+Note that any change in the set of allowed values (a narrowing or a widening) is effectively a breaking change, because we never know which party to a relation is older.
+
+Conceptually large changes to the URL format necessitate a new field. Certainly a change to the semantics of the field does.
+
+Some URL validation is a workload concern, and thus a change could be considered a feature.
+
+- broadening the value range could be allowing to express new workload functionality
+- narrowing could be rejecting what the workload cannot handle and thus expressing a new error handling functionality.
+
+Some changes can be seen as bug fixes.
+
+This specification puts a significant requirement to implement URL validation, document the rules and provide unit tests. For comparison, consider OpenAPI `format: "uri"` and `format: "uri-reference"`, which only deal with absolute URIs and absolute or relative URIs, leaving the rest to the application.
+
+**Different kinds of URLs**
+
+Below are a few examples of semantically different data represented by URLs. The interface definition and the charm library must make it clear what semantics are expected when receiving a given field, in other words what kind of URL this is:
+
+Base URL `http://pet.shop/v1`
+request `GET http://pet.shop/v1/animals/123`
+
+Endpoint URL: `https://ap.ssso.hdems.com/authorize`
+redirect to `Location: https://ap.ssso.hdems.com/authorize?client_id=123&...`
+
+Full URL `https://ap.ssso.hdems.com/oauth/userinfo`
+request `GET https://ap.ssso.hdems.com/oauth/userinfo` with `Authorization: xx`
+
+An opaque URL `issuer: https://ap.ssso.hdems.com`
+id token claims `iss: "https://ap.ssso.hdems.com", sub: "N42", name: "Bozo"`
+
+**URIs that are not URLs**
+
+For example, a MongoDB connection string is allowed to include multiple hosts:
+`mongodb://hsot1:27017,host2:27017,host3:27017/mydb?replicaSet=rs0`
+
+#### Semantic grouping
+
+Overall, we want to allow charms to operate in degraded mode.
+
+In order to support that, we need atomic validation of groups of the databag fields that naturally belong together. This is then paired with clean status messages in the advanced status API.
+
+Additionally, we want to isolate the feature sets:
+
+1. good practice in general
+   1. allows the recipient to erase slices of the databag, e.g. can't parse "port", so erase both "host" and "port"
+2.  slightly stronger typing
+
+#### Secret content schema
+
+When a secret id or a URI is passed over the relation, the format for the secret content becomes part of the interface. The same rules that apply to the databag content are therefore applied to the secret content.
+
+At the same time, secret content is rarely structured (arguably that would call for multiple independent secrets), thus secret values are expected to be primitive types.
+
+Note that ops does not have built-in support for lazily-validated secrets today.
+
+##### Why hairy secrets are rare
+
+A typical secret field value is a single logical thing. However, a **collection** of e.g. database endpoints is possible, paired with a single credential, or a **collection** of objects `{az, endpoint, credential}`.
+
+The case for **semantic grouping** is that the same relation interface may be used to talk to multiple applications, where a given application is only interested in a couple of fields out of a large databag. In case of a secret that's granted to a specific application, this begs the question why would that be the case.
+
+Discussion: Perhaps the provider cooks up a secret that should be understood by multiple versions of the same application, and thus the provider adds legacy and modern fields with the expectation that the requirer would use one field or the other.
+
+### Charm library
+
+#### Handle bad remote data
+
+A complex charm may include a dozen libraries and quite a few relations. The charm library author doesn't have the knowledge to determine whether their charm library is critical for any given charm, important, or optional. Additionally, `ops` requires charm `__init__` to complete to observe any events.
+
+Thus, charm library object initialisation cannot raise exceptions under normal circumstances.
+
+Exceptions can and should be used to report incorrect initialization (e.g. wrong relation name), hook command failures (e.g. Ops exceptions) and similar circumstances.
+
+- initialization with incorrect settings (e.g. relation name), because every hook is guaranteed to fail and it's best to catch these errors early
+- hook command failures, because those ought to be transient
+
+Likewise, `.is_ready` and advanced status API should not raise exceptions.
+
+Ultimately, this allows interfaces to be upgraded.
+It's about **controlled breakage**.
+
+A juju user can integrate any two applications whose charms advertise the same interface, and we don't want those applications to go into error state(s).
+
+For a simple requirer: <concrete example on GitHub>
+
+For a complex provider: <concrete example on GitHub>
+
+#### Provide .is_ready
+
+We want charm's `__init__` to succeed, and any Blocked status to only be set in the event handler.
+Sometimes though, the charm needs to pass data from one charm lib object to another while instantiating the latter. Without `.is_ready` on the earlier, charmers would have to wrap the data access in `try/except`.
+
+Additionally, we want the charm to be able to quickly determine if it's going to bail (e.g. Blocked status), that is to be able to check the preconditions easily.
+
+Directly useful to reconciler charms.
+For delta charms, when processing some other event (for example PebbleReady), `self.some_rel_obj.is_ready` should still be very useful.
+For the delta charms, perhaps it's more an internal method/property (was ready, now not ready --> FooDisconnected event).
+
+providers: `is_ready(relation: ops.Relation)` method, because it manages resources
+simple requirers: `is_ready` property (either a limit: 1 relation or requirer aggregates data from multiple relations). But it could be an `.is_ready()` method that takes no arguments.
+Charms seem to be on the fence which is better.
+
+#### Advanced status
+
+Key point: multiple relations in a consumer charms; multiple connected apps in a producer charm.
+It's up to the charm to decide how to determine and expose "degraded" status.
+
+vs.
+`Blocked(ingress not ready, because FDQN is missing)`
+`semantically: still waiting for the remote`
+
+vs.
+`Blocked(ingress not ready, because FDQN is bad: ValueError(""))`
+`...`
+`raw pydantic error`
+`ValidationError: 1 validation error for IngressUnitModel`
+`upstream_fqdn`
+  `Input should be a valid string [type=string_type, input_value=42, input_type=int]`
+    `For further information visit https://errors.pydantic.dev/2.12/v/string_type`
+
+vs FastAPI
+{
+    "detail": [
+        {
+            "loc": [
+                "path",
+                "item_id"
+            ],
+            "msg": "value is not a valid integer",
+            "type": "type_error.integer"
+        }
+    ]
+}
+
+A charm that parses data during `__init__`  should probably cache the errors on the charm lib object.
+In a complex deployment, being able to pinpoint what to look at first is gold.
+Should this method return a string? structured data? a method to call to get an exception? The spec doesn't mandate specific shape, only that there is a way. We'll leave it at that because today there's no clear consensus in the charming community.
+For the exception case, most charms would stringify the exception and stuff that into the blocked status.
+
+### Interface upgrades
+
+This is the first time that the interface upgrade strategy is suggested, especially across teams.
+(Do correct [Dima Tisnek](mailto:dima.tisnek@canonical.com) if he's wrong).
+
+### Testing
+
+The rules defined in this specification are designed to guarantee backward and forward compatibility outside of explicit breaking changes. Tests are the most reliable mechanism to ensure continued conformance to the rules and therefore compatibility guarantees.
+
+Primarily, tests are paid more attention to than comments or documentation. Additionally, the tests are easily automated and don't need as much human time once they are written.
+
+Tests are also easier to review than compliance of the implementation to requirements stated in the documentation.
+
+### Other systems
+
+#### Protobuf  v3
+
+All fields are optional in Protobuf 3, while they could be "required" or "optional" in Protobuf 2. The [published rationale](https://protobuf.dev/best-practices/dos-donts/#add-required), [comment](https://github.com/protocolbuffers/protobuf/issues/2497#issuecomment-267422550), and [third-party analysis](https://capnproto.org/faq.html#how-do-i-make-a-field-required-like-in-protocol-buffers):
+
+*"Required fields are considered harmful by so many [that] they were removed from proto3 completely. Make all fields optional or repeated. You never know how long a message type is going to last and whether someone will be forced to fill in your required field with an empty string or zero in four years when it's no longer logically required but the proto still says it is."*
+
+#### Apache Avro
+
+Apache Avro recommends two schemata for their equivalent of a databag, a Writer's schema and a Reader's schema:
+[https://avro.apache.org/docs/1.11.1/specification/#aliases](https://avro.apache.org/docs/1.11.1/specification/#aliases)
+more clearly contrasted here:
+[https://ambitious.systems/avro-writers-vs-readers-schema](https://ambitious.systems/avro-writers-vs-readers-schema)
+
+In a simple case, Reader's schema is the Writer's schema. There should be at least something in common between the two for data to be read back. These schemata can evolve independently.
