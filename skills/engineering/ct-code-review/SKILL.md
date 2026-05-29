@@ -1,5 +1,5 @@
 ---
-name: code-review
+name: ct-code-review
 description: Canonical code review guidelines. Use when reviewing code, preparing PRs for review, or giving feedback on changesets. Covers tone, procedures, code quality, changeset scope, and review process.
 license: CC-BY-4.0
 compatibility: universal
