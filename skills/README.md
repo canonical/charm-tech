@@ -24,8 +24,8 @@ assume a particular coding harness.
 npx skills add canonical/charm-tech --list                  # list available skills
 npx skills add canonical/charm-tech                         # pick from a list, into this project
 npx skills add canonical/charm-tech --all                   # install all of them, into this project
-npx skills add canonical/charm-tech --skill code-review     # one, into this project
-npx skills add canonical/charm-tech --skill code-review -g  # one, into your user/global skills
+npx skills add canonical/charm-tech --skill ct-code-review     # one, into this project
+npx skills add canonical/charm-tech --skill ct-code-review -g  # one, into your user/global skills
 ```
 
 ### Manually
@@ -35,8 +35,8 @@ agent's skills folder:
 
 ```bash
 # Claude Code — user-level (all projects) or project-level
-cp -r skills/engineering/code-review ~/.claude/skills/code-review
-cp -r skills/engineering/code-review <your-project>/.claude/skills/code-review
+cp -r skills/engineering/ct-code-review ~/.claude/skills/ct-code-review
+cp -r skills/engineering/ct-code-review <your-project>/.claude/skills/ct-code-review
 ```
 
 For other agents, copy into that agent's skills directory instead. The
@@ -49,10 +49,10 @@ the tooling keys on, so nesting depth does not matter.
 
 | Skill | What it does |
 | :-- | :-- |
-| `code-review` | Canonical code-review guidelines — tone, procedure, changeset scope, review process. |
+| `ct-code-review` | Canonical code-review guidelines — tone, procedure, changeset scope, review process. |
 | `go-standards` | Canonical Go coding standards (formatting, naming, errors, structs, interfaces, testing). For pebble and concierge. |
 | `cli-standards` | Canonical CLI design standards — grammar, flags, feedback, tables, verbosity, tone. For charmcraft/pebble/jubilant CLIs. |
-| `security-review` | General OWASP-style code security review with per-language and infrastructure guides, confidence gating, and exploitability verification. |
+| `ct-security-review` | General OWASP-style code security review with per-language and infrastructure guides, confidence gating, and exploitability verification. |
 | `gha-security-review` | GitHub Actions security review — pwn requests, expression injection, credential theft, supply-chain attacks, with concrete PoCs. |
 | `iterate-pr` | Drive a PR to green: fix CI failures, address review feedback, push, and wait, on a loop. |
 
