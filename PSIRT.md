@@ -41,16 +41,18 @@ Four hard rules govern embargoed issues:
 
 The embargo subteam is the minimal standing group authorised to hold Strictly Confidential embargoed information on behalf of Charm Tech. Its purpose is to limit need-to-know to a defined roster rather than spreading it across the full team.
 
-**Subteam members: TBD, to be named before publication.**  
-*(Target: 2–3 members. This placeholder must be replaced with named individuals before this document is considered active. Until named, the on-point engineer and the Charm Tech engineering lead are the provisional contacts.)*
+**Subteam members:
+
+* Harry Pidcock: particularly expert with Juju, Pebble, and Go
+* Tony Meyer: particularly expert with Ops and Python
 
 **Subteam charter:**
 
 - **Scope.** The subteam handles embargoed vulnerability information for all Charm Tech repos: operator, pebble, jubilant, pytest-jubilant, charmlibs, concierge, charm-ubuntu, api_demo_server, and any successors.
 - **Need-to-know discipline.** Only subteam members receive embargoed details. If implementing a fix requires involving someone outside the subteam, brief them on exactly what they need to develop the fix, and no wider context.
-- **Embargo clock.** The subteam tracks the 90-day embargo deadline. If a fix is unlikely to ship before day 85, the subteam escalates to the Charm Tech engineering lead and PSIRT.
+- **Embargo clock.** The subteam tracks the 90-day embargo deadline. If a fix is unlikely to ship before day 85, the subteam escalates to the Charm Tech manager and PSIRT.
 - **Accidental-disclosure response.** Any subteam member who discovers an accidental disclosure is responsible for sending the 4-hour notification to PSIRT, regardless of time zone or who caused the disclosure.
-- **Availability handoff.** If a subteam member will be unavailable during an active embargo (holiday, sick leave), they must hand off explicitly to another subteam member or the engineering lead. Embargoes must not go unmonitored.
+- **Availability handoff.** If a subteam member will be unavailable during an active embargo (holiday, sick leave), they must hand off explicitly to another subteam member or the manager. Embargoes must not go unmonitored.
 
 ## 24-hour notice to PSIRT before a security release
 
@@ -111,26 +113,10 @@ Default during an embargo: **Strictly Confidential** until the advisory is publi
 
 **Mandatory** (SEC0037/SEC0038 requirements triggered):
 
-A product has a mandatory PSIRT engagement obligation when it carries an LTS or customer security commitment **and** a High/Critical (CVSS ≥ 7.0) or KEV-listed issue arises. In the current Charm Tech estate this means **pebble** (classified Component & Platform; ships inside customer-facing products). When pebble has a qualifying issue, every step in this playbook is required.
+A product has a mandatory PSIRT engagement obligation when it carries an LTS or customer security commitment **and** a High/Critical (CVSS ≥ 7.0) or KEV-listed issue arises. In the current Charm Tech estate this means **Pebble** (classified Component & Platform; ships inside customer-facing products). When Pebble has a qualifying issue, every step in this playbook is required.
 
 **Best-of-class (recommended, not mandated by the SEC0023 matrix) for:**
 
 - **operator, jubilant, pytest-jubilant, charmlibs, concierge**: Tools & frameworks. The SSDLC matrix does not mandate PSIRT coordination for this class, but the contacts and routing are already wired and the overhead is low. Use this playbook for any High/Critical finding.
 - **charm-ubuntu, api_demo_server**: same guidance as tools & frameworks.
 - **charm-tech** (this repo): internal tooling; best-of-class.
-
-**Out of scope for this playbook:**
-
-- Penetration testing (SEC0029); centrally prioritised by the CISO Office.
-- Threat modeling (SEC0028); per-product process documented separately.
-- Risk Acceptance Form submissions; contact GRC/OCISO at `security@canonical.com`.
-- TIOBE TQI security-score gaps; tracked in the cycle's SSDLC Jira epic.
-
-## Quick reference
-
-| Contact | Purpose |
-|---|---|
-| `security@ubuntu.com` | Incoming reports, 24h release notice, PSIRT engagement, accidental-disclosure notification |
-| `security@canonical.com` | GRC/OCISO: Risk Acceptance Forms, exception requests, policy questions |
-| `~SSDLC` Mattermost + SSDLC Office Hours | SSDLC compliance questions, tool support (TIOBE TICS, secscan, SBOM) |
-| Launchpad private security bug | Embargo-period coordination channel (private by default) |
