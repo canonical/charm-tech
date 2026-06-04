@@ -12,7 +12,7 @@ PSIRT and external reporters reach us through three channels:
 | Launchpad private security bug | PSIRT-initiated or reporter-initiated; private by default | On-point engineer |
 | GitHub Security Advisory | Reporter uses the **Report a vulnerability** button in a repo's Security tab | On-point engineer |
 
-**On-point engineer** — the Charm Tech team member carrying the security-contact role for the current pulse. Until a rotation is formalised, treat the engineering lead as the fallback contact.
+**On-point engineer** — the Charm Tech team member carrying the security-contact role for the current pulse. Until a rotation is formalised, treat the manager, Ben Hoyt, as the fallback contact.
 
 On receiving a report via any channel:
 
