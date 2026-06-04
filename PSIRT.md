@@ -32,9 +32,9 @@ Four hard rules govern embargoed issues:
 
 **During an embargo:**
 
-- Coordinate via Launchpad private security bug or encrypted email. Not Mattermost, not a public GitHub issue.
+- Coordinate via Launchpad private security bug, GitHub private security advisory functionality, or encrypted email. Not Mattermost, not a public GitHub issue.
 - Classify all content at the **Strictly Confidential** level (see Information classification below).
-- Develop the fix on a private fork branch; do not open a public PR or push to `main` until the advisory is ready to go.
+- Develop the fix on a private fork branch (for example, with [GitHub's feature](https://docs.github.com/en/code-security/tutorials/fix-reported-vulnerabilities/collaborate-in-a-fork?versionId=free-pro-team%40latest&productId=code-security&restPage=how-tos%2Creport-and-fix-vulnerabilities%2Cfix-reported-vulnerabilities%2Cmanaging-privately-reported-security-vulnerabilities)); do not open a public PR or push to `main` until the advisory is ready to go.
 - Track the 90-day clock from the date of first report. Alert PSIRT if the fix is at risk of missing the window.
 
 ## The standing Charm Tech embargo subteam
