@@ -2,8 +2,6 @@
 
 Operational guide for the person on-point when PSIRT contacts Charm Tech or when a vulnerability surfaces from one of our repos. For policy rationale see SEC0026, SEC0037, SEC0038, and SEC0061; for the Canonical disclosure timeline see the [Ubuntu Security disclosure and embargo policy](https://ubuntu.com/security/disclosure-policy).
 
----
-
 ## Engagement entry points
 
 PSIRT and external reporters reach us through three channels:
@@ -23,8 +21,6 @@ On receiving a report via any channel:
 3. **High/Critical (CVSS ≥ 7.0) or KEV listed** → notify the embargo subteam and engage PSIRT at `security@ubuntu.com`. Follow the embargo process below.
 4. **Medium or below, no active exploit** → standard fix-and-release. No embargo required. Still give PSIRT 24-hour notice before the release (see below).
 
----
-
 ## Embargo handling (SEC0061 / Vulnerability Embargo Policy)
 
 Four hard rules govern embargoed issues:
@@ -41,8 +37,6 @@ Four hard rules govern embargoed issues:
 - Develop the fix on a private fork branch; do not open a public PR or push to `main` until the advisory is ready to go.
 - Track the 90-day clock from the date of first report. Alert PSIRT if the fix is at risk of missing the window.
 
----
-
 ## The standing Charm Tech embargo subteam
 
 The embargo subteam is the minimal standing group authorised to hold Strictly Confidential embargoed information on behalf of Charm Tech. Its purpose is to limit need-to-know to a defined roster rather than spreading it across the full team.
@@ -58,8 +52,6 @@ The embargo subteam is the minimal standing group authorised to hold Strictly Co
 - **Accidental-disclosure response.** Any subteam member who discovers an accidental disclosure is responsible for sending the 4-hour notification to PSIRT — regardless of time zone or who caused the disclosure.
 - **Availability handoff.** If a subteam member will be unavailable during an active embargo (holiday, sick leave), they must hand off explicitly to another subteam member or the engineering lead. Embargoes must not go unmonitored.
 
----
-
 ## 24-hour notice to PSIRT before a security release
 
 Before publishing any security fix or advisory, give PSIRT **at least 24 hours' notice**, regardless of severity.
@@ -72,8 +64,6 @@ PSIRT uses this window to:
 - Assign a CVE if none exists (Canonical is a CNA).
 - Coordinate with downstream distributors and other affected vendors.
 - Prepare an Ubuntu Security Notice (USN) if needed.
-
----
 
 ## SECURITY.md routing
 
@@ -105,8 +95,6 @@ High/Critical (CVSS ≥ 7.0) or KEV listed?
 | canonical/api_demo_server | https://github.com/canonical/api_demo_server/security/advisories/new |
 | canonical/charm-tech | https://github.com/canonical/charm-tech/security/advisories/new |
 
----
-
 ## Information classification (SEC0061)
 
 During and after an embargo, classify all materials per these three levels:
@@ -118,8 +106,6 @@ During and after an embargo, classify all materials per these three levels:
 | **Public** | No restriction | Published CVEs, merged GitHub Security Advisories, Ubuntu Security Notices, the shipped fix |
 
 Default during an embargo: **Strictly Confidential** until the advisory is public. Downgrade to Internal for internal-only retrospectives; to Public once advisory and fix are live.
-
----
 
 ## When this playbook applies
 
@@ -139,8 +125,6 @@ A product has a mandatory PSIRT engagement obligation when it carries an LTS or 
 - Threat modeling (SEC0028) — per-product process documented separately.
 - Risk Acceptance Form submissions — contact GRC/OCISO at `security@canonical.com`.
 - TIOBE TQI security-score gaps — tracked in the cycle's SSDLC Jira epic.
-
----
 
 ## Quick reference
 
