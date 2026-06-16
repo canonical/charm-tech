@@ -48,8 +48,6 @@ and their own PR so they cannot silently ride a patch bundle.
 * Switching from Dependabot to Renovate.
 * Auto-merge rules. Humans still merge; this spec is config-tuning only.
 * Reviewing transitive dependencies, since we do not pick those.
-* Standalone vulnerability scanning in CI (e.g. `uv audit`); see
-  [§Future work](#future-work).
 
 ## Specification
 
@@ -286,7 +284,6 @@ sharper seams **plus** the right directory reach (see [§charmlibs delta](#charm
   hand-maintained per-directory `ignore:` lists that the baseline caught
   drifting (`PyYAML` present in one of `operator`'s example lists, missing
   from the other).
-* Indentation is normalised to 2-space throughout.
 
 ### Resolved scoring rules
 
@@ -299,16 +296,9 @@ sharper seams **plus** the right directory reach (see [§charmlibs delta](#charm
    not a single shared group across the monorepo. Mirrors the
    per-`pyproject.toml` reality and lets reviewer routing fan out along
    `CODEOWNERS` lines.
-3. **SHA-pin all third-party GitHub Actions.** Security-posture win pays back
-   the review-cost increase; Dependabot still raises tag-tracking PRs against
-   the pinned SHA so updates remain visible. First-party / verified-publisher
-   actions stay tag-pinned.
-4. **Reviewer auto-routing is off, except in `charmlibs`.** Most repos are
+3. **Reviewer auto-routing is off, except in `charmlibs`.** Most repos are
    small enough that auto-assignment is noise. `charmlibs` follows
    `CODEOWNERS` so Dependabot PRs land on the right reviewer automatically.
-5. **Conventional Commits prefix is `chore: …`, no scope.** Match the repo
-   convention of not using scopes; do not introduce `chore(deps): …` as a
-   special case.
 
 ### Per-repo deltas
 
@@ -343,8 +333,8 @@ it to the canonical routine-lane shape (groups, cooldown, no per-directory
 template. The hand-rolled `ignore:` lists then go away in all three places.
 
 **Replication hygiene.** Normalise the filename to `.github/dependabot.yml`
-(`charmlibs` and `pebble` currently use `.yaml`). `pebble`'s config lives on
-the `master` branch, not `main`.
+(`charmlibs` and `pebble` currently use `.yaml`). Normalise indentation to
+two spaces.
 
 ### Rollout
 
@@ -357,10 +347,10 @@ block the others:
 4. `charm-ubuntu`
 5. `api_demo_server`
 6. `charmlibs`
-7. `operator` root
+7. `operator`
 8. `concierge`
 9. `pebble` (normalisation + drop the existing security lane)
-10. `hyrum` (optional; lowest priority)
+10. `hyrum`
 
 ### Acceptance criteria
 
@@ -370,52 +360,8 @@ block the others:
   setting enabled (`features.dependabot_security_updates = true`, applied via
   canonical-repo-automation). This is the **only** CVE path under the new
   template — verify on the GitHub Settings → Code security page for every
-  in-scope repo, not only in the HCL. See [§Charm Tech settings
-  caveat](#charm-tech-settings-caveat) for the pebble-specific terraform fix
-  this prompts.
+  in-scope repo, not only in the HCL.
 * Indentation is 2-space throughout. Filename is `.github/dependabot.yml`.
 * Volume of Dependabot PRs over a 4-week window after rollout is materially
   lower than the 4-week pre-window baseline. (Concrete target deferred to
   step-1 data check after rollout.)
-
-## Future work
-
-* **`uv audit` as a CI gate.** Once `uv audit`
-  ([blog post](https://astral.sh/blog/uv-audit), Astral, 2026) leaves preview,
-  adding it as a CI step across the uv-managed repos is a natural complement
-  to the security-only Dependabot lane. The Dependabot lane alerts when a
-  published advisory matches a dep already locked; `uv audit` blocks a PR
-  that *introduces* a newly-vulnerable dep. It also adds deprecation
-  detection (signal for the dep-audit work) and an opt-in malware check
-  (`UV_MALWARE_CHECK=1`) that Dependabot provides no equivalent for. Requires
-  a `uv.lock`; pip-managed repos would continue with `pip-audit` or wait
-  for a migration path.
-* **Direct-dependency audit.** Per-repo walk of direct deps and GitHub
-  Actions asking three questions — "do we use enough of this to justify it?",
-  "is there a tighter-focused alternative?", "is the action still the right
-  action?" — with verdicts feeding follow-up removal / replacement work.
-  Tracked separately from this spec.
-* **Conventions note.** Once the template stabilises, fold a short
-  "Charm Tech repo conventions" reference into this repo's README so new
-  repos start from this shape.
-
-## Open questions
-
-These are not blockers for the rollout above but should be settled with repo
-owners during or shortly after adoption:
-
-1. **Weekly vs monthly routine cadence.** Defaulted to monthly. `operator`'s
-   50 % closed-without-merge ratio hints that monthly batching is letting
-   PRs age out before merge — a point *for* weekly. Decide from the
-   merge-cadence data once a few months of the new template are in.
-2. **Auto-merge-on-green.** Three repos look like they already auto-merge:
-   `charm-ubuntu` (17 min median TTM), `charmhub-listing-review` (26 min),
-   `jubilant` (1.3 h). Confirm whether this is a convention this spec should
-   leave alone or formalise.
-3. **SHA-pinning posture for third-party actions.** Two repos currently
-   tag-pin third-party actions: `DavidAnson/markdownlint-cli2-action`
-   (`charmlibs`) and `aquasecurity/trivy-action` (`pebble`). Scoring rule #3
-   says SHA-pin; track those two as the first migration targets.
-4. **Canonical Sec org-standard.** Verify there is no org-wide
-   `dependabot.yml` standard from Canonical Sec that this spec needs to
-   align with. If one emerges later, fold a Sec review in then.
