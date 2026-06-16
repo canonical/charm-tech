@@ -331,7 +331,7 @@ All repos use the canonical shape above; only the deltas below differ.
 
 | Repo | Ecosystem(s) | Delta from canonical |
 |---|---|---|
-| `operator` (root) | github-actions, uv | None — self-check. `examples/*` blocks are deferred (see below). |
+| `operator` (root) | github-actions, uv | None at the root — self-check. `+ examples/httpbin-demo` as a second `uv` entry on the canonical routine-lane shape; drop the existing `k8s-5-observe` and `machine-tinyproxy` blocks (their `uv.lock` files are being removed from the repo, see below). |
 | `charmhub-listing-review` | github-actions, uv | `+ zizmor` in `dev-tooling` (repo runs the zizmor GH-Actions linter). |
 | `pytest-jubilant` | github-actions, uv | None of substance (actions-heavy; the `actions` group is the win). |
 | `jubilant` | github-actions, uv | None of substance (`ops` is a dev dep, caught by `runtime`). |
@@ -342,11 +342,20 @@ All repos use the canonical shape above; only the deltas below differ.
 | `pebble` | github-actions, **gomod** | Drop the existing daily security-only `gomod` entry — superseded by the repo-level toggle. Normalise at replication time (`.yaml`→`.yml`, `master`→`main` lookup path). |
 | `hyrum` | github-actions, uv | Same shape as `jubilant` / `pytest-jubilant`; lowest volume in the set, fine as-is. |
 
-**`operator/examples/*` blocks** are out of scope of this spec. `uv.lock`
-is being removed from the charmcraft profiles; the count has already dropped
-5 → 4 → 3 on its own. When the remaining blocks are revisited, copy the
-routine-lane shape into each surviving `examples/*` block and drop the
-hand-rolled `ignore:` lists.
+**`operator/examples/*` blocks.** The current `dependabot.yml` carries three
+`examples/*` entries (`httpbin-demo`, `k8s-5-observe`, `machine-tinyproxy`),
+each with a hand-rolled `ignore:` list.
+
+Two of those — the k8s tutorial (`k8s-5-observe`) and the machine tutorial
+(`machine-tinyproxy`) — are dropping their committed `uv.lock` and will
+generate the lockfile in their test runs instead. With no `uv.lock` in the
+tree, Dependabot has nothing to track in those directories: **drop their
+`examples/*` entries entirely** as part of this rollout.
+
+That leaves `httpbin-demo` as the only surviving `examples/*` block. Convert
+it to the canonical routine-lane shape (groups, cooldown, no per-directory
+`ignore:` list) and inherit the docs-toolchain ignore from the canonical
+template. The hand-rolled `ignore:` lists then go away in all three places.
 
 **Replication hygiene.** Normalise the filename to `.github/dependabot.yml`
 (`charmlibs` and `pebble` currently use `.yaml`). `pebble`'s config lives on
