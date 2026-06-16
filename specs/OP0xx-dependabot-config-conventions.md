@@ -1,4 +1,4 @@
-# OP??? — Dependabot config conventions for Charm Tech repos
+# OP???: Dependabot config conventions for Charm Tech repos
 
 | Field | Value |
 | --- | --- |
@@ -25,9 +25,9 @@ The Charm Tech repos emit a steady stream of Dependabot PRs. The cost is
 * Even a clean patch-bump needs eyes on the diff and on CI.
 * Five PRs in a morning, each ~5 min, is closer to an hour once the
   reviewer has re-loaded the repo's context.
-* When something *does* need to land urgently — typically a CVE patch — being
-  two minors behind is fine; being a major behind is not, and shipping a major
-  as a security fix is the worst time to do it.
+* When something *does* need to land urgently (typically a CVE patch),
+  being two minors behind is fine; being a major behind is not, and
+  shipping a major as a security fix is the worst time to do it.
 
 The strategy is not to *update less*. It is to (a) batch routine bumps along
 sensible seams, (b) rely on the repo-level "Dependabot security updates"
@@ -47,7 +47,7 @@ and their own PR so they cannot silently ride a patch bundle.
 
 * Switching from Dependabot to Renovate.
 * Auto-merge rules. Humans still merge; this spec is config-tuning only.
-* **Suppressing transitive bumps** is *not* a non-goal — it is open work,
+* **Suppressing transitive bumps** is *not* a non-goal: it is open work,
   blocked on upstream Dependabot. See [§Transitive dependencies](#transitive-dependencies)
   and the corresponding open question.
 
@@ -83,7 +83,7 @@ Aggregate noise across the ten in-scope repos in the 90-day window:
 | Merged in window | 122 |
 | Closed-without-merge | 38 (22 %) |
 
-Per-repo volume (sorted high → low):
+Per-repo volume (sorted high to low):
 
 | Repo | Total | Merged | Open | Closed-unmerged | TTM median |
 |---|---|---|---|---|---|
@@ -103,7 +103,7 @@ Two observations from this data drive the design:
 1. **Grouping is essentially absent** outside `charmlibs`. Five small bumps
    become five PRs in every other repo. This is the single biggest noise
    source.
-2. **`charmlibs`' grouped lane is not delivering** — 10 open PRs (45 % of
+2. **`charmlibs`' grouped lane is not delivering**: 10 open PRs (45 % of
    its window) despite a wildcard `test-deps: ["*"]` group, because the
    group only targeted `directory: "/"` while the bumps were in
    `/interfaces/*`. The fix is sharper seams plus the right directory reach
@@ -114,7 +114,7 @@ Two observations from this data drive the design:
 are driven by the **repo-level "Dependabot security updates" toggle**
 (canonical-repo-automation sets `features.dependabot_security_updates = true`
 group-wide for Charm Tech, see `groups/charm-engineering/charm-tech/repos/repos-settings.hcl`),
-and open as soon as a matching GHSA advisory publishes — independent of any
+and open as soon as a matching GHSA advisory publishes, independent of any
 YAML schedule. A monthly routine lane therefore does not delay CVE patches.
 The two repos that currently ship a separate daily "security lane" in YAML
 (`pebble` gomod, `charmlibs` pip) get nothing measurable from it that the
@@ -136,7 +136,7 @@ version: 2
 
 updates:
   # ===================================================================
-  # GitHub Actions — routine lane (monthly, single grouped PR)
+  # GitHub Actions: routine lane (monthly, single grouped PR)
   # ===================================================================
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -154,8 +154,8 @@ updates:
           - "*"
 
   # ===================================================================
-  # Python (uv) — routine lane (monthly, grouped along three seams;
-  # docs toolchain is excluded — see `ignore:` block below)
+  # Python (uv): routine lane (monthly, grouped along three seams;
+  # docs toolchain is excluded, see `ignore:` block below)
   # ===================================================================
   - package-ecosystem: "uv"
     directory: "/"
@@ -169,11 +169,11 @@ updates:
       semver-major-days: 14
     # Docs toolchain is tracked upstream by the Sphinx Stack project; we
     # take version bumps from there, not from Dependabot. `update-types:`
-    # scopes the ignore to *version* updates — security PRs for these
+    # scopes the ignore to *version* updates. Security PRs for these
     # packages still flow via the repo-level "Dependabot security updates"
     # toggle.
     #
-    # Caveat: dependabot-core#12354 — uv honours the ignore in the PR
+    # Caveat: dependabot-core#12354. uv honours the ignore in the PR
     # description but can still write the ignored dep into uv.lock as a
     # side effect of another PR. The PR title/body will say "ignored";
     # the lockfile diff may show a sphinx bump anyway. Tracked upstream.
@@ -189,7 +189,7 @@ updates:
       - dependency-name: "pygments"
         update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
     groups:
-      # Linters / type-checkers / formatters. Majors ride along — we do not
+      # Linters / type-checkers / formatters. Majors ride along; we do not
       # pin these and a major ruff/pyright is low-risk to review in a batch.
       dev-tooling:
         patterns:
@@ -218,9 +218,9 @@ updates:
           - "patch"
 ```
 
-### Design rationale — one lane per ecosystem
+### Design rationale: one lane per ecosystem
 
-Per ecosystem, **one `updates:` entry**: the routine lane — `monthly`,
+Per ecosystem, **one `updates:` entry**: the routine lane, `monthly`,
 grouped, `open-pull-requests-limit: 5`. Batches the steady patch/minor
 stream into a handful of grouped PRs per month.
 
@@ -228,18 +228,19 @@ stream into a handful of grouped PRs per month.
 
 **No separate security lane in YAML.** GHSA-driven security PRs come from the
 repo-level "Dependabot security updates" toggle, which is event-driven
-(advisory publishes → alert → PR within minutes) and ignores `dependabot.yml`
-schedules entirely. The toggle is set group-wide for Charm Tech in
-canonical-repo-automation (`features.dependabot_security_updates = true` in
+(advisory publishes, alert raised, PR opened within minutes) and ignores
+`dependabot.yml` schedules entirely. The toggle is set group-wide for
+Charm Tech in canonical-repo-automation
+(`features.dependabot_security_updates = true` in
 `groups/charm-engineering/charm-tech/repos/repos-settings.hcl`).
 
 A second `updates:` entry with `schedule: daily` and
-`open-pull-requests-limit: 0` — as `pebble` and `charmlibs` currently ship —
-adds no measurable benefit on top of the repo toggle: the daily schedule only
-governs *version-update* sweeps (suppressed here by `limit: 0` anyway), and
-security PRs are event-driven, not scan-driven. The pattern is dropped from
-the canonical template; the comment at the top of `dependabot.yml` points a
-reader at the repo setting instead.
+`open-pull-requests-limit: 0`, as `pebble` and `charmlibs` currently ship,
+adds no measurable benefit on top of the repo toggle: the daily schedule
+only governs *version-update* sweeps (suppressed here by `limit: 0`
+anyway), and security PRs are event-driven, not scan-driven. The pattern
+is dropped from the canonical template; the comment at the top of
+`dependabot.yml` points a reader at the repo setting instead.
 
 If for any reason the repo toggle gets turned off, the recovery is to turn it
 back on in canonical-repo-automation, not to paper over it in YAML.
@@ -251,36 +252,37 @@ plus one actions group:
 
 | Group | Patterns | Why these |
 |---|---|---|
-| `dev-tooling` | `ruff`, `pyright`, `ty`, `codespell`, `coverage`, `pre-commit`, `types-*` | Linters/checkers we do not pin; safe to batch incl. majors. `ruff` is a top-5 bump in `operator`/`jubilant`/`pytest-jubilant`/`charmhub-listing-review`. |
+| `dev-tooling` | `ruff`, `pyright`, `ty`, `codespell`, `coverage`, `pre-commit`, `types-*` | Linters/checkers we do not pin; safe to batch including majors. `ruff` is a top-5 bump in `operator`/`jubilant`/`pytest-jubilant`/`charmhub-listing-review`. |
 | `test-deps` | `pytest`, `pytest-*`, `jubilant`, `ops-scenario` | `pytest` is the single noisiest package in `charmlibs` (7×) and recurs everywhere. |
-| `runtime` | `*` (catch-all), `update-types: [minor, patch]` | Everything else. The update-type filter means a runtime **major** matches no group → its own ungrouped PR, so a major never silently rides a patch bundle. |
+| `runtime` | `*` (catch-all), `update-types: [minor, patch]` | Everything else. The update-type filter means a runtime **major** matches no group and so gets its own ungrouped PR, so a major never silently rides a patch bundle. |
 | `actions` | `*` | The github-actions surface is small and homogeneous; one group is plenty. |
 
 **Docs toolchain is excluded entirely**, not grouped. `sphinx`, `sphinx-*`,
 `furo`, `myst-parser`, and `pygments` are filtered out by the entry's
-`ignore:` block — we take version bumps for these from the upstream
+`ignore:` block. We take version bumps for these from the upstream
 **Sphinx Stack** project rather than from per-repo Dependabot, since the docs
 stack is coupled and best updated together. This is the biggest single noise
 win in the spec: `pygments` alone is `operator`'s #1 bump (7×/90d) and
-`charmlibs`' #2 (4×) — pure lockfile churn that produces no per-repo signal.
+`charmlibs`' #2 (4×), pure lockfile churn that produces no per-repo signal.
 Security PRs for these packages still flow (the `update-types:` on the
 ignore block scopes it to *version* updates only; the repo-level "Dependabot
 security updates" toggle is unaffected).
 
 **Group precedence.** Dependabot assigns a dependency to the *first* matching
 group in file order. `dev-tooling` / `test-deps` are listed before `runtime`,
-so e.g. `ruff` lands in `dev-tooling` (all update-types), never in
+so for example `ruff` lands in `dev-tooling` (all update-types), never in
 `runtime`. The `runtime` catch-all is last and only claims minor + patch.
 
 **Why not copy `charmlibs`' `test-deps: ["*"]`?** The baseline shows
-`charmlibs` sitting on 10 open PRs (45 % of its window) *despite* that group —
-because the grouped lane only targeted `directory: "/"` while the bumps were
-in `/interfaces/*`. The lesson is the opposite of "one wildcard group":
-sharper seams **plus** the right directory reach (see [§charmlibs delta](#charmlibs)).
+`charmlibs` sitting on 10 open PRs (45 % of its window) *despite* that
+group, because the grouped lane only targeted `directory: "/"` while the
+bumps were in `/interfaces/*`. The lesson is the opposite of "one wildcard
+group": sharper seams **plus** the right directory reach (see
+[§charmlibs delta](#charmlibs)).
 
 ### Cooldowns and majors
 
-* **`cooldown.default-days: 7`** everywhere (unchanged from baseline) — gives
+* **`cooldown.default-days: 7`** everywhere (unchanged from baseline): gives
   a week for a bad release to be yanked before we look.
 * **`cooldown.semver-major-days: 14`** is new: majors get a longer settle
   window to flush regressions. Cheap, and pairs with majors arriving as their
@@ -294,13 +296,13 @@ sharper seams **plus** the right directory reach (see [§charmlibs delta](#charm
 
 ### Transitive dependencies
 
-`uv.lock` and `pip` lockfile bumps for **transitive** (indirect) deps —
-i.e., things we did not pick, pulled in through someone else's range — show
-up as Dependabot PRs and account for a non-trivial chunk of the noise. The
-canonical template does **not** filter them; they match the `runtime`
-group's `"*"` pattern (by name) with `update-types: [minor, patch]`, so they
-ride the monthly `runtime` PR alongside direct deps. This is honest about
-the volume but does not reduce it.
+`uv.lock` and `pip` lockfile bumps for **transitive** (indirect) deps,
+meaning things we did not pick that get pulled in through someone else's
+range, show up as Dependabot PRs and account for a non-trivial chunk of the
+noise. The canonical template does **not** filter them; they match the
+`runtime` group's `"*"` pattern (by name) with `update-types: [minor,
+patch]`, so they ride the monthly `runtime` PR alongside direct deps. This
+is honest about the volume but does not reduce it.
 
 The clean fix is "raise PRs only for *direct* deps; let transitives move
 when something direct pulls them, and rely on the repo-level security
@@ -308,16 +310,16 @@ toggle to catch CVEs in transitives in between". The supported way to
 express that in `dependabot.yml` is `allow: [{ dependency-type: "direct" }]`
 on the relevant entries.
 
-**We are not doing that yet** because the Dependabot integration for uv —
-which is the dominant ecosystem here and where most repos are headed — is
-not ready:
+**We are not doing that yet** because the Dependabot integration for uv
+(the dominant ecosystem here, and where most repos are headed) is not
+ready:
 
-* [dependabot-core#13202](https://github.com/dependabot/dependabot-core/issues/13202)
-  — uv classifies every dep as `production`, so `dependency-type`-based
+* [dependabot-core#13202](https://github.com/dependabot/dependabot-core/issues/13202):
+  uv classifies every dep as `production`, so `dependency-type`-based
   filtering is incomplete in practice. Until that lands, an `allow:` filter
   on a uv entry would silently filter the wrong set.
-* [dependabot-core#12354](https://github.com/dependabot/dependabot-core/issues/12354)
-  — separate bug: uv honours `ignore:` in the PR description but still
+* [dependabot-core#12354](https://github.com/dependabot/dependabot-core/issues/12354):
+  separate bug. uv honours `ignore:` in the PR description but still
   modifies `uv.lock` for the ignored dep. This already affects the
   docs-toolchain `ignore:` in the canonical template: the PR will read
   "ignored", but a sphinx bump can still land in `uv.lock` as a side effect
@@ -356,23 +358,23 @@ All repos use the canonical shape above; only the deltas below differ.
 
 | Repo | Ecosystem(s) | Delta from canonical |
 |---|---|---|
-| `operator` (root) | github-actions, uv | None at the root — self-check. `+ examples/httpbin-demo` as a second `uv` entry on the canonical routine-lane shape; drop the existing `k8s-5-observe` and `machine-tinyproxy` blocks (their `uv.lock` files are being removed from the repo, see below). |
+| `operator` (root) | github-actions, uv | None at the root: self-check. `+ examples/httpbin-demo` as a second `uv` entry on the canonical routine-lane shape; drop the existing `k8s-5-observe` and `machine-tinyproxy` blocks (their `uv.lock` files are being removed from the repo, see below). |
 | `charmhub-listing-review` | github-actions, uv | `+ zizmor` in `dev-tooling` (repo runs the zizmor GH-Actions linter). |
 | `pytest-jubilant` | github-actions, uv | None of substance (actions-heavy; the `actions` group is the win). |
 | `jubilant` | github-actions, uv | None of substance (`ops` is a dev dep, caught by `runtime`). |
 | `charm-ubuntu` | github-actions, **pip** | `pip` not `uv`; `+ versioning-strategy: increase` (constraint-style requirements). Tiny surface; mostly a grouping win. |
 | `api_demo_server` | github-actions, **pip**, **docker** | `pip` + `versioning-strategy: increase`; `+ docker` ecosystem (base image, monthly grouped); `+ flit` in `dev-tooling`. |
-| <a id="charmlibs"></a>`charmlibs` | github-actions, **pip** (monorepo) | **Biggest delta:** routine lane uses `directories: ["/", "/*", "/interfaces/*"]` instead of a lone `directory: "/"`, so the grouped lane actually reaches the nested lib dirs where the 10-PR backlog lives. Preserves & widens the existing glob. Drop the existing daily security-only `pip` entry — superseded by the repo-level toggle. |
+| <a id="charmlibs"></a>`charmlibs` | github-actions, **pip** (monorepo) | **Biggest delta:** routine lane uses `directories: ["/", "/*", "/interfaces/*"]` instead of a lone `directory: "/"`, so the grouped lane actually reaches the nested lib dirs where the 10-PR backlog lives. Preserves and widens the existing glob. Drop the existing daily security-only `pip` entry; superseded by the repo-level toggle. |
 | `concierge` | github-actions, **gomod** | None of substance; matches the template. |
-| `pebble` | github-actions, **gomod** | Drop the existing daily security-only `gomod` entry — superseded by the repo-level toggle. Normalise at replication time (`.yaml`→`.yml`, `master`→`main` lookup path). |
+| `pebble` | github-actions, **gomod** | Drop the existing daily security-only `gomod` entry; superseded by the repo-level toggle. Normalise at replication time (`.yaml` to `.yml`, `master` to `main` lookup path). |
 | `hyrum` | github-actions, uv | Same shape as `jubilant` / `pytest-jubilant`; lowest volume in the set, fine as-is. |
 
 **`operator/examples/*` blocks.** The current `dependabot.yml` carries three
 `examples/*` entries (`httpbin-demo`, `k8s-5-observe`, `machine-tinyproxy`),
 each with a hand-rolled `ignore:` list.
 
-Two of those — the k8s tutorial (`k8s-5-observe`) and the machine tutorial
-(`machine-tinyproxy`) — are dropping their committed `uv.lock` and will
+Two of those, the k8s tutorial (`k8s-5-observe`) and the machine tutorial
+(`machine-tinyproxy`), are dropping their committed `uv.lock` and will
 generate the lockfile in their test runs instead. With no `uv.lock` in the
 tree, Dependabot has nothing to track in those directories: **drop their
 `examples/*` entries entirely** as part of this rollout.
@@ -409,7 +411,7 @@ block the others:
 * Each in-scope repo has the repo-level **"Dependabot security updates"**
   setting enabled (`features.dependabot_security_updates = true`, applied via
   canonical-repo-automation). This is the **only** CVE path under the new
-  template — verify on the GitHub Settings → Code security page for every
+  template; verify on the GitHub Settings then Code security page for every
   in-scope repo, not only in the HCL.
 * Indentation is 2-space throughout. Filename is `.github/dependabot.yml`.
 * Volume of Dependabot PRs over a 4-week window after rollout is materially
@@ -428,5 +430,5 @@ block the others:
    `charmlibs` have migrated to uv, then add `allow: [{ dependency-type:
    "direct" }]` to the canonical template. Track
    [dependabot-core#12354](https://github.com/dependabot/dependabot-core/issues/12354)
-   in parallel — it would also be nice to have the docs `ignore:` actually
+   in parallel; it would also be nice to have the docs `ignore:` actually
    keep sphinx out of `uv.lock`.
