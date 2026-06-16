@@ -1,4 +1,4 @@
-# OP??? — Dependabot config conventions for charm-tech repos
+# OP??? — Dependabot config conventions for Charm Tech repos
 
 | Field | Value |
 | --- | --- |
@@ -12,8 +12,10 @@ This spec proposes a canonical `.github/dependabot.yml` shape for
 Charm Tech repositories, plus the per-repo deltas needed to apply it. The aim
 is **fewer, larger, better-batched PRs at a steady cadence** without
 lengthening security-patch latency. Adoption should materially reduce the
-~58 Dependabot PRs/month the team currently fields across ten repos while
-keeping CVE patches on a daily lane.
+~58 Dependabot PRs/month the team currently fields across ten repos. CVE
+patches stay fast because they are raised by the repo-level "Dependabot
+security updates" toggle (managed group-wide via canonical-repo-automation),
+which is event-driven and independent of `dependabot.yml`'s schedule.
 
 ## Rationale
 
@@ -28,9 +30,10 @@ The Charm Tech repos emit a steady stream of Dependabot PRs. The cost is
   as a security fix is the worst time to do it.
 
 The strategy is not to *update less*. It is to (a) batch routine bumps along
-sensible seams, (b) keep a fast, ungrouped lane for security advisories so the
-batching does not delay CVE response, and (c) give majors a longer cooldown
-window and their own PR so they cannot silently ride a patch bundle.
+sensible seams, (b) rely on the repo-level "Dependabot security updates"
+toggle for the CVE path (it is event-driven, so batching the routine lane
+does not delay CVE response), and (c) give majors a longer cooldown window
+and their own PR so they cannot silently ride a patch bundle.
 
 ### Goals
 
@@ -95,28 +98,28 @@ Per-repo volume (sorted high → low):
 | `pebble` | 6 | 4 | 1 | 1 | 40.3 h |
 | `hyrum` | 4 | 3 | 0 | 1 | 5.0 h |
 
-Three observations from this data drive the design:
+Two observations from this data drive the design:
 
 1. **Grouping is essentially absent** outside `charmlibs`. Five small bumps
    become five PRs in every other repo. This is the single biggest noise
    source.
-2. **A security-only daily lane exists only on `pebble` (gomod) and
-   `charmlibs` (pip).** This is a missing *re-scan-cadence + in-repo
-   documentation* signal, not a missing CVE path — see the note below.
-3. **The two repos that already run two lanes have the lowest PR volume in
-   the set** (`pebble` 6/90d, and `charmlibs`'s low *merged* count masks an
-   open-PR backlog that the existing wildcard group is failing to consolidate
-   — see [§charmlibs delta](#charmlibs)).
+2. **`charmlibs`' grouped lane is not delivering** — 10 open PRs (45 % of
+   its window) despite a wildcard `test-deps: ["*"]` group, because the
+   group only targeted `directory: "/"` while the bumps were in
+   `/interfaces/*`. The fix is sharper seams plus the right directory reach
+   (see [§charmlibs delta](#charmlibs)).
 
 **On CVE latency and the repo-level setting.** The `schedule:` field in
 `dependabot.yml` governs *version-update* sweeps only. Security-update PRs
 are driven by the **repo-level "Dependabot security updates" toggle**
 (canonical-repo-automation sets `features.dependabot_security_updates = true`
-group-wide for charm-tech, see `groups/charm-engineering/charm-tech/repos/repos-settings.hcl`),
-and open as soon as a matching GHSA advisory publishes — independent of the
-YAML schedule. So a monthly routine lane does **not** delay CVE patches on any
-repo where that toggle is on. The two-lane shape below is therefore a
-re-scan-cadence + in-repo-documentation pattern, not a CVE-latency fix.
+group-wide for Charm Tech, see `groups/charm-engineering/charm-tech/repos/repos-settings.hcl`),
+and open as soon as a matching GHSA advisory publishes — independent of any
+YAML schedule. A monthly routine lane therefore does not delay CVE patches.
+The two repos that currently ship a separate daily "security lane" in YAML
+(`pebble` gomod, `charmlibs` pip) get nothing measurable from it that the
+repo toggle does not already provide; this spec drops the pattern (see
+[§no security lane in YAML](#no-security-lane-in-yaml)).
 
 ### The canonical template
 
@@ -125,6 +128,10 @@ flagship). Root block only; per-ecosystem deltas in
 [§Per-repo deltas](#per-repo-deltas).
 
 ```yaml
+# Routine version-update sweeps only. CVE patches are raised by the
+# repo-level "Dependabot security updates" toggle (managed in
+# canonical-repo-automation: features.dependabot_security_updates = true),
+# which is event-driven and does not honour the schedule below.
 version: 2
 
 updates:
@@ -196,65 +203,35 @@ updates:
         update-types:
           - "minor"
           - "patch"
-
-  # ===================================================================
-  # Python (uv) — security-only lane (daily, ungrouped)
-  #
-  # open-pull-requests-limit: 0  ⇒  no version-update PRs from this entry;
-  # security-update PRs (which ignore the limit) still flow, daily. NO
-  # cooldown here on purpose — a security feed must not be delayed.
-  # ===================================================================
-  - package-ecosystem: "uv"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    open-pull-requests-limit: 0
-    labels:
-      - "dependencies"
 ```
 
-### Design rationale — two lanes
+### Design rationale — one lane per ecosystem
 
-Per ecosystem, **two `updates:` entries**:
+Per ecosystem, **one `updates:` entry**: the routine lane — `monthly`,
+grouped, `open-pull-requests-limit: 5`. Batches the steady patch/minor
+stream into a handful of grouped PRs per month.
 
-* **Routine lane** — `monthly`, grouped, `open-pull-requests-limit: 5`. Batches
-  the steady patch/minor stream into a handful of grouped PRs per month.
-* **Security-only lane** — `daily`, ungrouped, `open-pull-requests-limit: 0`.
+<a id="no-security-lane-in-yaml"></a>
 
-`open-pull-requests-limit: 0` does **not** disable the entry — it suppresses
-*version-update* PRs while *security-update* PRs (which ignore the limit) keep
-flowing, checked daily.
+**No separate security lane in YAML.** GHSA-driven security PRs come from the
+repo-level "Dependabot security updates" toggle, which is event-driven
+(advisory publishes → alert → PR within minutes) and ignores `dependabot.yml`
+schedules entirely. The toggle is set group-wide for Charm Tech in
+canonical-repo-automation (`features.dependabot_security_updates = true` in
+`groups/charm-engineering/charm-tech/repos/repos-settings.hcl`).
 
-**This is belt-and-braces, not the primary CVE path.** The
-[repo-level `dependabot_security_updates` toggle](#rationale) is what gets a
-CVE patch into a PR within minutes of the advisory publishing; it works whether
-or not a `dependabot.yml` ships a security lane, and it is already set
-group-wide for charm-tech (with one caveat — see [§charm-tech settings
-caveat](#charm-tech-settings-caveat)). What the daily YAML lane actually adds
-on top is:
+A second `updates:` entry with `schedule: daily` and
+`open-pull-requests-limit: 0` — as `pebble` and `charmlibs` currently ship —
+adds no measurable benefit on top of the repo toggle: the daily schedule only
+governs *version-update* sweeps (suppressed here by `limit: 0` anyway), and
+security PRs are event-driven, not scan-driven. The pattern is dropped from
+the canonical template; the comment at the top of `dependabot.yml` points a
+reader at the repo setting instead.
 
-* **Faster manifest re-scan.** Dependabot re-checks the lockfile against the
-  advisory database at the entry's `schedule:` cadence. A daily lane shortens
-  the worst-case window between locking a now-vulnerable transitive and
-  Dependabot noticing.
-* **In-repo legibility.** A reviewer reading `dependabot.yml` can see that
-  this repo has an active security path without having to open repo settings.
+If for any reason the repo toggle gets turned off, the recovery is to turn it
+back on in canonical-repo-automation, not to paper over it in YAML.
 
-Two deliberate choices for the lane itself:
-
-* **No `cooldown:`.** A cooldown on a security feed defeats its purpose; no
-  repo in the baseline does this, and the canonical template must not paste a
-  default cooldown there by reflex.
-* **Ungrouped.** A CVE patch should be its own reviewable PR, not bundled.
-
-**Multi-config note.** The routine and security lanes are two entries for the
-*same* ecosystem + `directory: "/"`. Dependabot's multiple-configurations
-support allows this (`charmlibs` already ships overlapping `pip` entries on
-`/`). If a future Dependabot validation ever rejects the overlap, the lane
-can be dropped without functional loss — the repo-level toggle still raises
-security PRs on its own.
-
-#### charm-tech settings caveat
+#### Charm Tech settings caveat
 
 `pebble/terragrunt.hcl` redeclares `features = { projects = false, wiki =
 false }`, which overrides the entire `features` object set at the group level
@@ -340,11 +317,11 @@ All repos use the canonical shape above; only the deltas below differ.
 | `charmhub-listing-review` | github-actions, uv | `+ zizmor` in `dev-tooling` (repo runs the zizmor GH-Actions linter). |
 | `pytest-jubilant` | github-actions, uv | None of substance (actions-heavy; the `actions` group is the win). |
 | `jubilant` | github-actions, uv | None of substance (`ops` is a dev dep, caught by `runtime`). |
-| `charm-ubuntu` | github-actions, **pip** | `pip` not `uv`; `+ versioning-strategy: increase` (constraint-style requirements). Tiny surface; main win is adding the security lane. |
+| `charm-ubuntu` | github-actions, **pip** | `pip` not `uv`; `+ versioning-strategy: increase` (constraint-style requirements). Tiny surface; mostly a grouping win. |
 | `api_demo_server` | github-actions, **pip**, **docker** | `pip` + `versioning-strategy: increase`; `+ docker` ecosystem (base image, monthly grouped); `+ flit` in `dev-tooling`. |
-| <a id="charmlibs"></a>`charmlibs` | github-actions, **pip** (monorepo) | **Biggest delta:** routine + security lanes use `directories: ["/", "/*", "/interfaces/*"]` instead of a lone `directory: "/"`, so the grouped lane actually reaches the nested lib dirs where the 10-PR backlog lives. Preserves & widens the existing glob. |
-| `concierge` | github-actions, **gomod** | Add the daily security-only `gomod` lane to match `pebble`. The github-actions / gomod shape otherwise matches the template. |
-| `pebble` | github-actions, **gomod** | Already two-lane; the proof-of-concept. Only normalisation at replication time (`.yaml`→`.yml`, `master`→`main` lookup path). |
+| <a id="charmlibs"></a>`charmlibs` | github-actions, **pip** (monorepo) | **Biggest delta:** routine lane uses `directories: ["/", "/*", "/interfaces/*"]` instead of a lone `directory: "/"`, so the grouped lane actually reaches the nested lib dirs where the 10-PR backlog lives. Preserves & widens the existing glob. Drop the existing daily security-only `pip` entry — superseded by the repo-level toggle. |
+| `concierge` | github-actions, **gomod** | None of substance; matches the template. |
+| `pebble` | github-actions, **gomod** | Drop the existing daily security-only `gomod` entry — superseded by the repo-level toggle. Normalise at replication time (`.yaml`→`.yml`, `master`→`main` lookup path). |
 | `hyrum` | github-actions, uv | Same shape as `jubilant` / `pytest-jubilant`; lowest volume in the set, fine as-is. |
 
 **`operator/examples/*` blocks** are out of scope of this spec. `uv.lock`
@@ -369,21 +346,21 @@ block the others:
 5. `api_demo_server`
 6. `charmlibs`
 7. `operator` root
-8. `concierge` (independent — adds the daily security `gomod` lane)
-9. `pebble` (normalisation only)
+8. `concierge`
+9. `pebble` (normalisation + drop the existing security lane)
 10. `hyrum` (optional; lowest priority)
 
 ### Acceptance criteria
 
 * Each in-scope repo has a `dependabot.yml` matching the canonical template,
   or with deltas documented in this spec.
-* Each in-scope repo has the daily security-only lane for every ecosystem it
-  configures.
 * Each in-scope repo has the repo-level **"Dependabot security updates"**
   setting enabled (`features.dependabot_security_updates = true`, applied via
-  canonical-repo-automation). This is the actual CVE path; the YAML lane is
-  belt-and-braces. Verify on the GitHub Settings → Code security page, not
-  only in the HCL — see [§charm-tech settings caveat](#charm-tech-settings-caveat).
+  canonical-repo-automation). This is the **only** CVE path under the new
+  template — verify on the GitHub Settings → Code security page for every
+  in-scope repo, not only in the HCL. See [§Charm Tech settings
+  caveat](#charm-tech-settings-caveat) for the pebble-specific terraform fix
+  this prompts.
 * Indentation is 2-space throughout. Filename is `.github/dependabot.yml`.
 * Volume of Dependabot PRs over a 4-week window after rollout is materially
   lower than the 4-week pre-window baseline. (Concrete target deferred to
@@ -407,7 +384,7 @@ block the others:
   action?" — with verdicts feeding follow-up removal / replacement work.
   Tracked separately from this spec.
 * **Conventions note.** Once the template stabilises, fold a short
-  "charm-tech repo conventions" reference into this repo's README so new
+  "Charm Tech repo conventions" reference into this repo's README so new
   repos start from this shape.
 
 ## Open questions
