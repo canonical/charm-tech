@@ -154,7 +154,8 @@ updates:
           - "*"
 
   # ===================================================================
-  # Python (uv) — routine lane (monthly, grouped along four seams)
+  # Python (uv) — routine lane (monthly, grouped along three seams;
+  # docs toolchain is excluded — see `ignore:` block below)
   # ===================================================================
   - package-ecosystem: "uv"
     directory: "/"
@@ -166,6 +167,22 @@ updates:
     cooldown:
       default-days: 7
       semver-major-days: 14
+    # Docs toolchain is tracked upstream by the Sphinx Stack project; we
+    # take version bumps from there, not from Dependabot. `update-types:`
+    # scopes the ignore to *version* updates — security PRs for these
+    # packages still flow via the repo-level "Dependabot security updates"
+    # toggle.
+    ignore:
+      - dependency-name: "sphinx"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "sphinx-*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "furo"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "myst-parser"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      - dependency-name: "pygments"
+        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
     groups:
       # Linters / type-checkers / formatters. Majors ride along — we do not
       # pin these and a major ruff/pyright is low-risk to review in a batch.
@@ -185,18 +202,9 @@ updates:
           - "pytest-*"
           - "jubilant"
           - "ops-scenario"
-      # Docs toolchain. pygments is operator's single noisiest package
-      # (7 bumps/90d) and is a docs/highlighting dep — grouping it here is
-      # the biggest single noise win.
-      docs:
-        patterns:
-          - "sphinx"
-          - "sphinx-*"
-          - "furo"
-          - "myst-parser"
-          - "pygments"
       # Everything else, minor + patch only. A runtime MAJOR falls through
       # to its own ungrouped PR so it never silently rides a patch bundle.
+      # Docs deps are filtered out at the `ignore:` block above.
       runtime:
         patterns:
           - "*"
@@ -248,20 +256,30 @@ blocker for this spec.
 
 ### Group patterns
 
-Validated against `operator`'s actual 90-day bump stream. Four Python seams
+Validated against `operator`'s actual 90-day bump stream. Three Python seams
 plus one actions group:
 
 | Group | Patterns | Why these |
 |---|---|---|
 | `dev-tooling` | `ruff`, `pyright`, `ty`, `codespell`, `coverage`, `pre-commit`, `types-*` | Linters/checkers we do not pin; safe to batch incl. majors. `ruff` is a top-5 bump in `operator`/`jubilant`/`pytest-jubilant`/`charmhub-listing-review`. |
 | `test-deps` | `pytest`, `pytest-*`, `jubilant`, `ops-scenario` | `pytest` is the single noisiest package in `charmlibs` (7×) and recurs everywhere. |
-| `docs` | `sphinx`, `sphinx-*`, `furo`, `myst-parser`, `pygments` | `pygments` is `operator`'s #1 bump (7×/90d) and `charmlibs`' #2 (4×) — a docs/highlighting dep, pure lockfile churn. Folding it (with sphinx) into one group is the biggest single noise win. |
 | `runtime` | `*` (catch-all), `update-types: [minor, patch]` | Everything else. The update-type filter means a runtime **major** matches no group → its own ungrouped PR, so a major never silently rides a patch bundle. |
 | `actions` | `*` | The github-actions surface is small and homogeneous; one group is plenty. |
 
+**Docs toolchain is excluded entirely**, not grouped. `sphinx`, `sphinx-*`,
+`furo`, `myst-parser`, and `pygments` are filtered out by the entry's
+`ignore:` block — we take version bumps for these from the upstream
+**Sphinx Stack** project rather than from per-repo Dependabot, since the docs
+stack is coupled and best updated together. This is the biggest single noise
+win in the spec: `pygments` alone is `operator`'s #1 bump (7×/90d) and
+`charmlibs`' #2 (4×) — pure lockfile churn that produces no per-repo signal.
+Security PRs for these packages still flow (the `update-types:` on the
+ignore block scopes it to *version* updates only; the repo-level "Dependabot
+security updates" toggle is unaffected).
+
 **Group precedence.** Dependabot assigns a dependency to the *first* matching
-group in file order. `dev-tooling` / `test-deps` / `docs` are listed before
-`runtime`, so e.g. `ruff` lands in `dev-tooling` (all update-types), never in
+group in file order. `dev-tooling` / `test-deps` are listed before `runtime`,
+so e.g. `ruff` lands in `dev-tooling` (all update-types), never in
 `runtime`. The `runtime` catch-all is last and only claims minor + patch.
 
 **Why not copy `charmlibs`' `test-deps: ["*"]`?** The baseline shows
