@@ -47,7 +47,9 @@ and their own PR so they cannot silently ride a patch bundle.
 
 * Switching from Dependabot to Renovate.
 * Auto-merge rules. Humans still merge; this spec is config-tuning only.
-* Reviewing transitive dependencies, since we do not pick those.
+* **Suppressing transitive bumps** is *not* a non-goal — it is open work,
+  blocked on upstream Dependabot. See [§Transitive dependencies](#transitive-dependencies)
+  and the corresponding open question.
 
 ## Specification
 
@@ -170,6 +172,11 @@ updates:
     # scopes the ignore to *version* updates — security PRs for these
     # packages still flow via the repo-level "Dependabot security updates"
     # toggle.
+    #
+    # Caveat: dependabot-core#12354 — uv honours the ignore in the PR
+    # description but can still write the ignored dep into uv.lock as a
+    # side effect of another PR. The PR title/body will say "ignored";
+    # the lockfile diff may show a sphinx bump anyway. Tracked upstream.
     ignore:
       - dependency-name: "sphinx"
         update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
@@ -285,6 +292,49 @@ sharper seams **plus** the right directory reach (see [§charmlibs delta](#charm
   drifting (`PyYAML` present in one of `operator`'s example lists, missing
   from the other).
 
+### Transitive dependencies
+
+`uv.lock` and `pip` lockfile bumps for **transitive** (indirect) deps —
+i.e., things we did not pick, pulled in through someone else's range — show
+up as Dependabot PRs and account for a non-trivial chunk of the noise. The
+canonical template does **not** filter them; they match the `runtime`
+group's `"*"` pattern (by name) with `update-types: [minor, patch]`, so they
+ride the monthly `runtime` PR alongside direct deps. This is honest about
+the volume but does not reduce it.
+
+The clean fix is "raise PRs only for *direct* deps; let transitives move
+when something direct pulls them, and rely on the repo-level security
+toggle to catch CVEs in transitives in between". The supported way to
+express that in `dependabot.yml` is `allow: [{ dependency-type: "direct" }]`
+on the relevant entries.
+
+**We are not doing that yet** because the Dependabot integration for uv —
+which is the dominant ecosystem here and where most repos are headed — is
+not ready:
+
+* [dependabot-core#13202](https://github.com/dependabot/dependabot-core/issues/13202)
+  — uv classifies every dep as `production`, so `dependency-type`-based
+  filtering is incomplete in practice. Until that lands, an `allow:` filter
+  on a uv entry would silently filter the wrong set.
+* [dependabot-core#12354](https://github.com/dependabot/dependabot-core/issues/12354)
+  — separate bug: uv honours `ignore:` in the PR description but still
+  modifies `uv.lock` for the ignored dep. This already affects the
+  docs-toolchain `ignore:` in the canonical template: the PR will read
+  "ignored", but a sphinx bump can still land in `uv.lock` as a side effect
+  of a runtime PR. Acceptable for now (no CVE-path implication), tracked
+  upstream. A comment in the canonical template's `ignore:` block points
+  here so the next reviewer is not surprised.
+
+`pip` entries *could* take the `allow:` filter today (the bugs above are
+uv-specific), and `pip` is documented to support `dependency-type: direct`
+cleanly. We are deliberately not splitting the spec by ecosystem for this:
+`charm-ubuntu` is migrating to uv soon and `charmlibs` is a likely uv
+migration after that, so the pip-only window is short-lived. Cleaner to
+revisit transitives once everything is on uv and the upstream classifier
+issues are fixed.
+
+See the [corresponding open question](#open-questions).
+
 ### Resolved scoring rules
 
 1. **Routine lane stays monthly.** Status quo. Weekly + groups produces
@@ -365,3 +415,18 @@ block the others:
 * Volume of Dependabot PRs over a 4-week window after rollout is materially
   lower than the 4-week pre-window baseline. (Concrete target deferred to
   step-1 data check after rollout.)
+
+### Open questions
+
+1. <a id="open-questions"></a>**Filter transitive deps once upstream is
+   ready.** Goal: stop raising PRs for indirect deps in the routine lane;
+   let them move when something direct pulls them, and rely on the
+   repo-level security toggle for CVEs in between. Blocked on
+   [dependabot-core#13202](https://github.com/dependabot/dependabot-core/issues/13202)
+   (uv classifies every dep as `production`, so `dependency-type`-based
+   filtering is incomplete). Revisit once that lands and `charm-ubuntu` /
+   `charmlibs` have migrated to uv, then add `allow: [{ dependency-type:
+   "direct" }]` to the canonical template. Track
+   [dependabot-core#12354](https://github.com/dependabot/dependabot-core/issues/12354)
+   in parallel — it would also be nice to have the docs `ignore:` actually
+   keep sphinx out of `uv.lock`.
