@@ -154,8 +154,7 @@ updates:
           - "*"
 
   # ===================================================================
-  # Python (uv): routine lane (monthly, grouped along three seams;
-  # docs toolchain is excluded, see `ignore:` block below)
+  # Python (uv): routine lane (monthly, grouped along three seams)
   # ===================================================================
   - package-ecosystem: "uv"
     directory: "/"
@@ -167,27 +166,6 @@ updates:
     cooldown:
       default-days: 7
       semver-major-days: 14
-    # Docs toolchain is tracked upstream by the Sphinx Stack project; we
-    # take version bumps from there, not from Dependabot. `update-types:`
-    # scopes the ignore to *version* updates. Security PRs for these
-    # packages still flow via the repo-level "Dependabot security updates"
-    # toggle.
-    #
-    # Caveat: dependabot-core#12354. uv honours the ignore in the PR
-    # description but can still write the ignored dep into uv.lock as a
-    # side effect of another PR. The PR title/body will say "ignored";
-    # the lockfile diff may show a sphinx bump anyway. Tracked upstream.
-    ignore:
-      - dependency-name: "sphinx"
-        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
-      - dependency-name: "sphinx-*"
-        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
-      - dependency-name: "furo"
-        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
-      - dependency-name: "myst-parser"
-        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
-      - dependency-name: "pygments"
-        update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
     groups:
       # Linters / type-checkers / formatters. Majors ride along; we do not
       # pin these and a major ruff/pyright is low-risk to review in a batch.
@@ -209,7 +187,6 @@ updates:
           - "ops-scenario"
       # Everything else, minor + patch only. A runtime MAJOR falls through
       # to its own ungrouped PR so it never silently rides a patch bundle.
-      # Docs deps are filtered out at the `ignore:` block above.
       runtime:
         patterns:
           - "*"
@@ -257,16 +234,15 @@ plus one actions group:
 | `runtime` | `*` (catch-all), `update-types: [minor, patch]` | Everything else. The update-type filter means a runtime **major** matches no group and so gets its own ungrouped PR, so a major never silently rides a patch bundle. |
 | `actions` | `*` | The github-actions surface is small and homogeneous; one group is plenty. |
 
-**Docs toolchain is excluded entirely**, not grouped. `sphinx`, `sphinx-*`,
-`furo`, `myst-parser`, and `pygments` are filtered out by the entry's
-`ignore:` block. We take version bumps for these from the upstream
-**Sphinx Stack** project rather than from per-repo Dependabot, since the docs
-stack is coupled and best updated together. This is the biggest single noise
-win in the spec: `pygments` alone is `operator`'s #1 bump (7×/90d) and
-`charmlibs`' #2 (4×), pure lockfile churn that produces no per-repo signal.
-Security PRs for these packages still flow (the `update-types:` on the
-ignore block scopes it to *version* updates only; the repo-level "Dependabot
-security updates" toggle is unaffected).
+**Docs-toolchain bumps are out of scope.** Version bumps for `sphinx`,
+`furo`, `myst-parser`, and the rest of the docs stack are managed upstream
+by the **Sphinx Stack** project rather than per-repo Dependabot, since the
+docs stack is coupled and best updated together. The routine lane
+structurally never sees these packages: docs deps are not present in the
+tracked `uv.lock`/`requirements.txt` files, and no `dependabot.yml` entry
+in this spec targets a `docs/` directory, so no `ignore:` block is needed.
+Security PRs for docs packages still flow via the repo-level "Dependabot
+security updates" toggle.
 
 **Group precedence.** Dependabot assigns a dependency to the *first* matching
 group in file order. `dev-tooling` / `test-deps` are listed before `runtime`,
@@ -318,14 +294,6 @@ ready:
   uv classifies every dep as `production`, so `dependency-type`-based
   filtering is incomplete in practice. Until that lands, an `allow:` filter
   on a uv entry would silently filter the wrong set.
-* [dependabot-core#12354](https://github.com/dependabot/dependabot-core/issues/12354):
-  separate bug. uv honours `ignore:` in the PR description but still
-  modifies `uv.lock` for the ignored dep. This already affects the
-  docs-toolchain `ignore:` in the canonical template: the PR will read
-  "ignored", but a sphinx bump can still land in `uv.lock` as a side effect
-  of a runtime PR. Acceptable for now (no CVE-path implication), tracked
-  upstream. A comment in the canonical template's `ignore:` block points
-  here so the next reviewer is not surprised.
 
 `pip` entries *could* take the `allow:` filter today (the bugs above are
 uv-specific), and `pip` is documented to support `dependency-type: direct`
@@ -363,7 +331,7 @@ All repos use the canonical shape above; only the deltas below differ.
 | `pytest-jubilant` | github-actions, uv | None of substance (actions-heavy; the `actions` group is the win). |
 | `jubilant` | github-actions, uv | None of substance (`ops` is a dev dep, caught by `runtime`). |
 | `charm-ubuntu` | github-actions, **pip** | `pip` not `uv`; `+ versioning-strategy: increase` (constraint-style requirements). Tiny surface; mostly a grouping win. |
-| `api_demo_server` | github-actions, **pip**, **docker** | `pip` + `versioning-strategy: increase`; `+ docker` ecosystem (base image, monthly grouped); `+ flit` in `dev-tooling`. |
+| `api_demo_server` | github-actions, uv | None of substance once [api_demo_server#45](https://github.com/canonical/api_demo_server/pull/45) lands (that PR converts pip→uv, drops the `Dockerfile` for a rock, and switches flit→`uv_build`). |
 | <a id="charmlibs"></a>`charmlibs` | github-actions, **pip** (monorepo) | **Biggest delta:** routine lane uses `directories: ["/", "/*", "/interfaces/*"]` instead of a lone `directory: "/"`, so the grouped lane actually reaches the nested lib dirs where the 10-PR backlog lives. Preserves and widens the existing glob. Drop the existing daily security-only `pip` entry; superseded by the repo-level toggle. |
 | `concierge` | github-actions, **gomod** | None of substance; matches the template. |
 | `pebble` | github-actions, **gomod** | Drop the existing daily security-only `gomod` entry; superseded by the repo-level toggle. Normalise at replication time (`.yaml` to `.yml`, `master` to `main` lookup path). |
@@ -381,8 +349,8 @@ tree, Dependabot has nothing to track in those directories: **drop their
 
 That leaves `httpbin-demo` as the only surviving `examples/*` block. Convert
 it to the canonical routine-lane shape (groups, cooldown, no per-directory
-`ignore:` list) and inherit the docs-toolchain ignore from the canonical
-template. The hand-rolled `ignore:` lists then go away in all three places.
+`ignore:` list). The hand-rolled `ignore:` lists then go away in all three
+places.
 
 **Replication hygiene.** Normalise the filename to `.github/dependabot.yml`
 (`charmlibs` and `pebble` currently use `.yaml`). Normalise indentation to
@@ -397,7 +365,7 @@ block the others:
 2. `pytest-jubilant`
 3. `jubilant`
 4. `charm-ubuntu`
-5. `api_demo_server`
+5. `api_demo_server` (after [#45](https://github.com/canonical/api_demo_server/pull/45) lands; spec baseline assumes that PR's state)
 6. `charmlibs`
 7. `operator`
 8. `concierge`
@@ -428,7 +396,4 @@ block the others:
    (uv classifies every dep as `production`, so `dependency-type`-based
    filtering is incomplete). Revisit once that lands and `charm-ubuntu` /
    `charmlibs` have migrated to uv, then add `allow: [{ dependency-type:
-   "direct" }]` to the canonical template. Track
-   [dependabot-core#12354](https://github.com/dependabot/dependabot-core/issues/12354)
-   in parallel; it would also be nice to have the docs `ignore:` actually
-   keep sphinx out of `uv.lock`.
+   "direct" }]` to the canonical template.
