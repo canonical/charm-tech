@@ -239,21 +239,6 @@ reader at the repo setting instead.
 If for any reason the repo toggle gets turned off, the recovery is to turn it
 back on in canonical-repo-automation, not to paper over it in YAML.
 
-#### Charm Tech settings caveat
-
-`pebble/terragrunt.hcl` redeclares `features = { projects = false, wiki =
-false }`, which overrides the entire `features` object set at the group level
-and leaves `dependabot_security_updates` at its `null` default. The module
-gates the resource on `count = var.features.dependabot_security_updates !=
-null`, so terraform does not manage that setting on pebble at all.
-
-Verified 2026-06-16: pebble's "Dependabot security updates" is in fact
-**enabled** in the GitHub UI, so there is no live exposure — but the state is
-unmanaged and could drift on a manual toggle. Fix in canonical-repo-automation
-by adding `dependabot_security_updates = true` to pebble's `features` block
-(or by merging rather than redeclaring). Pre-rollout housekeeping, not a
-blocker for this spec.
-
 ### Group patterns
 
 Validated against `operator`'s actual 90-day bump stream. Three Python seams
