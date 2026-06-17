@@ -48,9 +48,6 @@ and their own PR so they cannot silently ride a patch bundle.
 
 * Switching from Dependabot to Renovate.
 * Auto-merge rules. Humans still merge; this spec is config-tuning only.
-* **Suppressing transitive bumps** is *not* a non-goal: it is open work,
-  blocked on upstream Dependabot. See [§Transitive dependencies](#transitive-dependencies)
-  and the corresponding open question.
 
 ## Specification
 
