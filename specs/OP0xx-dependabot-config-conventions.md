@@ -25,9 +25,10 @@ The Charm Tech repos emit a steady stream of Dependabot PRs. The cost is
 * Even a clean patch-bump needs eyes on the diff and on CI.
 * Five PRs in a morning, each ~5 min, is closer to an hour once the
   reviewer has re-loaded the repo's context.
-* When something *does* need to land urgently (typically a CVE patch),
-  being two minors behind is fine; being a major behind is not, and
-  shipping a major as a security fix is the worst time to do it.
+
+When something *does* need to land urgently (typically a CVE patch),
+being two minors behind is fine; being a major behind is not, and
+shipping a major as a security fix is the worst time to do it.
 
 The strategy is not to *update less*. It is to (a) batch routine bumps along
 sensible seams, (b) rely on the repo-level "Dependabot security updates"
