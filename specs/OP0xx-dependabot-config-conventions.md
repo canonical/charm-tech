@@ -53,50 +53,9 @@ and their own PR so they cannot silently ride a patch bundle.
 
 ### Baseline (snapshot, 2026-06-08)
 
-The shape proposed below is grounded in 90 days of actual Dependabot PR
-history. Window: `created:>=2026-03-08`, captured 2026-06-06. 90 days
-provides a good window size, but this is slightly complicated by
-including two different dependabot config shapes during the window.
-
-| Repo | Lang | Ecosystems | Schedule | Cooldown | Grouping | Security lane |
-|---|---|---|---|---|---|---|
-| `operator` | Python | github-actions, uv ×4 (root + 3 examples) | monthly | 7d | none | no |
-| `charmlibs` | Python | github-actions, pip (root + `/[a-z]*`) | monthly + daily security-only | 7d on routine; none on sec | `test-deps: ["*"]` | yes |
-| `jubilant` | Python | github-actions, uv | monthly | 7d | none | no |
-| `pytest-jubilant` | Python | github-actions, uv | monthly | 7d | none | no |
-| `pebble` | Go | github-actions, gomod | monthly / daily security-only (gomod) | 7d on gh-actions; none on sec | none | yes |
-| `concierge` | Go | github-actions, gomod | monthly | 7d | none | none | no |
-| `api_demo_server` | Python | github-actions, pip, docker | monthly | 7d | none | no |
-| `charmhub-listing-review` | Python | github-actions, uv | monthly | 7d | none | no |
-| `charm-ubuntu` | Python | github-actions, pip | monthly | 7d | none | no |
-| `hyrum` | Python | github-actions, uv | monthly | 7d | none | no |
-
-Aggregate noise across the ten in-scope repos in the 90-day window:
-
-| Metric | Value |
-|---|---|
-| Total Dependabot PRs | **174** |
-| Per-month average across the ten repos | **~58** |
-| Open at snapshot | 14 |
-| Merged in window | 122 |
-| Closed-without-merge | 38 (22 %) |
-
-Per-repo volume (sorted high to low):
-
-| Repo | Total | Merged | Open | Closed-unmerged | TTM median |
-|---|---|---|---|---|---|
-| `operator` | 42 | 20 | 1 | 21 | 3.9 d |
-| `charmhub-listing-review` | 26 | 25 | 0 | 1 | 26 min |
-| `charmlibs` | 22 | 10 | 10 | 2 | 3.2 d |
-| `api_demo_server` | 21 | 15 | 1 | 5 | 6.0 d |
-| `jubilant` | 17 | 15 | 1 | 1 | 1.3 h |
-| `pytest-jubilant` | 15 | 11 | 0 | 4 | 4.0 d |
-| `concierge` | 11 | 11 | 0 | 0 | 4.9 d |
-| `charm-ubuntu` | 10 | 8 | 0 | 2 | 17 min |
-| `pebble` | 6 | 4 | 1 | 1 | 40.3 h |
-| `hyrum` | 4 | 3 | 0 | 1 | 5.0 h |
-
-Two observations from this data drive the design:
+Grounded in 90 days of Dependabot PR history across the ten in-scope
+repos: **174 PRs, ~58/month, 22 % closed without merge**. Two observations
+drive the design:
 
 1. **Grouping is essentially absent** outside `charmlibs`. Five small bumps
    become five PRs in every other repo. This is the single biggest noise
@@ -106,6 +65,9 @@ Two observations from this data drive the design:
    group only targeted `directory: "/"` while the bumps were in
    `/interfaces/*`. The fix is sharper seams plus the right directory reach
    (see [§charmlibs delta](#charmlibs)).
+
+Per-repo config snapshot, aggregate volume, and per-repo PR counts are in
+[further information](#baseline-data).
 
 **On CVE latency and the repo-level setting.** The `schedule:` field in
 `dependabot.yml` governs *version-update* sweeps only. Security-update PRs
@@ -395,3 +357,54 @@ block the others:
    filtering is incomplete). Revisit once that lands and `charm-ubuntu` /
    `charmlibs` have migrated to uv, then add `allow: [{ dependency-type:
    "direct" }]` to the canonical template.
+
+## Further information
+
+### Baseline data
+
+<a id="baseline-data"></a>
+
+Window: `created:>=2026-03-08`, captured 2026-06-06. The window includes
+two different dependabot config shapes (the cutover landed mid-window),
+which slightly muddies per-repo comparisons but does not change the
+aggregate picture.
+
+Per-repo config snapshot at the start of the window:
+
+| Repo | Lang | Ecosystems | Schedule | Cooldown | Grouping | Security lane |
+|---|---|---|---|---|---|---|
+| `operator` | Python | github-actions, uv ×4 (root + 3 examples) | monthly | 7d | none | no |
+| `charmlibs` | Python | github-actions, pip (root + `/[a-z]*`) | monthly + daily security-only | 7d on routine; none on sec | `test-deps: ["*"]` | yes |
+| `jubilant` | Python | github-actions, uv | monthly | 7d | none | no |
+| `pytest-jubilant` | Python | github-actions, uv | monthly | 7d | none | no |
+| `pebble` | Go | github-actions, gomod | monthly / daily security-only (gomod) | 7d on gh-actions; none on sec | none | yes |
+| `concierge` | Go | github-actions, gomod | monthly | 7d | none | none | no |
+| `api_demo_server` | Python | github-actions, pip, docker | monthly | 7d | none | no |
+| `charmhub-listing-review` | Python | github-actions, uv | monthly | 7d | none | no |
+| `charm-ubuntu` | Python | github-actions, pip | monthly | 7d | none | no |
+| `hyrum` | Python | github-actions, uv | monthly | 7d | none | no |
+
+Aggregate PR volume across the ten in-scope repos in the 90-day window:
+
+| Metric | Value |
+|---|---|
+| Total Dependabot PRs | **174** |
+| Per-month average across the ten repos | **~58** |
+| Open at snapshot | 14 |
+| Merged in window | 122 |
+| Closed-without-merge | 38 (22 %) |
+
+Per-repo volume (sorted high to low):
+
+| Repo | Total | Merged | Open | Closed-unmerged | TTM median |
+|---|---|---|---|---|---|
+| `operator` | 42 | 20 | 1 | 21 | 3.9 d |
+| `charmhub-listing-review` | 26 | 25 | 0 | 1 | 26 min |
+| `charmlibs` | 22 | 10 | 10 | 2 | 3.2 d |
+| `api_demo_server` | 21 | 15 | 1 | 5 | 6.0 d |
+| `jubilant` | 17 | 15 | 1 | 1 | 1.3 h |
+| `pytest-jubilant` | 15 | 11 | 0 | 4 | 4.0 d |
+| `concierge` | 11 | 11 | 0 | 0 | 4.9 d |
+| `charm-ubuntu` | 10 | 8 | 0 | 2 | 17 min |
+| `pebble` | 6 | 4 | 1 | 1 | 40.3 h |
+| `hyrum` | 4 | 3 | 0 | 1 | 5.0 h |
