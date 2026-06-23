@@ -5,6 +5,8 @@
 | Type | Implementation |
 | Created | 09 Jun 2026 |
 
+<!-- mdtog begin hs=-1 -->
+
 ## Abstract
 
 This spec describes adding a `trust` section to the Pebble plan that
@@ -26,51 +28,54 @@ Trust contexts are consumed by four features:
 
 ## Rationale
 
-Pebble currently uses the OS system certificate pool for all outbound TLS
+Pebble currently uses the system certificate pool for all outbound TLS
 connections. This works well for publicly trusted endpoints but fails in
 several common deployment scenarios.
 
 **Private CA infrastructure**: Many enterprises and Kubernetes clusters use
 an internal certificate authority. Service processes, health check
 endpoints, and log backends may present certificates signed by this private
-CA, which is absent from the OS system pool. Without custom CA
-configuration, all such connections fail with certificate verification
-errors.
+CA, which is absent from the system pool. Without custom CA configuration,
+all such connections fail with certificate verification errors.
 
-**Operator-controlled trust**: In Juju and Charmed Operator deployments the
-operator supplies CA bundles to both Pebble's own outbound connections and
-the service processes it manages. Today this requires either patching the OS
-system pool (requiring root privileges and affecting the whole host) or
-configuring each service individually outside of Pebble, making the
-configuration harder to audit and compose.
+**Charm-controlled trust**: In Juju deployments the Charm supplies CA bundles
+to both Pebble's own outbound connections and the service processes it manages.
+Today this requires either patching the system pool (requiring root privileges
+and affecting the whole container) or configuring each service individually
+using environment variables with a custom CA pool, making the configuration
+harder to compose and audit.
 
 **Layer-based composition**: Pebble's layer system lets operators build
-configuration incrementally. Trust configuration should follow the same
-pattern — a base layer can establish a site-wide CA bundle, and an overlay
-layer can extend it without duplicating certificate material across every
-check and log-target definition.
+configuration incrementally. Trust configuration could follow the same
+pattern — a base layer can establish a CA bundle, and an overlay layer can
+extend it without duplicating certificates across every check and log-target
+definition.
+
+
+## Specification
 
 Named trust contexts introduce CA bundles as a first-class plan concept. A
 bundle is defined once and referenced by name from checks, log targets, and
 service definitions, without duplication. The `include-system` field allows
-a context to extend the OS system certificate pool with additional private
-CAs, without requiring operators to patch system files. The design also
-provides a clean extension point for future additions such as client
-certificates for mutual TLS.
+a context to extend the system certificate pool with additional private CAs,
+without requiring operators to patch system files. The design also provides a
+clean extension point for future additions such as client certificates for
+mutual TLS.
 
 
-## System Certificate Pool Default
+### System Certificate Pool Default
 
 When no `trust-context` is specified on a service, check, or log target,
-Pebble uses the OS system certificate pool for outbound TLS verification.
+Pebble uses the system certificate pool for outbound TLS verification.
 No environment variables are injected into services or exec checks in this
-case. This is the default behaviour and requires no plan configuration.
+case. This is the default behaviour, requires no plan configuration and
+maintains existing behaviour.
 
 
-## Plan Configuration
+### Plan Configuration
 
 A new top-level section `trust-contexts` is added to the Pebble plan. It follows
-the same map-based, multi-layer merge pattern used by `log-targets`.
+the same key-based typing, multi-layer merge pattern used by `log-targets`.
 
 ```yaml
 trust-contexts:
@@ -85,14 +90,14 @@ trust-contexts:
                 - /path/to/cert/1.crt
 ```
 
-### Required Fields
+#### Required Fields
 
 - **`override`**: How this trust context is combined with any existing
   definition of the same name in a lower layer. Supported values are
   `merge` and `replace`. See [Layer Merge Semantics] for how `merge`
   behaves specifically for `x509`.
 
-### Optional Fields
+#### Optional Fields
 
 - **`x509`**: X.509-specific trust configuration. Contains the following
   sub-fields:
@@ -100,7 +105,7 @@ trust-contexts:
   - **`ca-cert`**: One or more PEM-encoded X.509 CA certificates,
     concatenated in a single string. When the trust context is used for an
     outbound TLS connection or service injection, Pebble builds a cert pool
-    from these certificates (and the OS system pool if `include-system` is
+    from these certificates (and the system pool if `include-system` is
     `true`).
 
   - **`ca-cert-files`**: A list of paths to PEM-encoded X.509 certificate
@@ -116,18 +121,18 @@ trust-contexts:
   `ca-cert-files`) is valid; when `include-system` is also absent or `false`,
   it resolves to an empty cert pool, which trusts nothing.
 
-- **`include-system`**: Whether to include the OS system certificate pool as
-  part of this context's cert pool. When `true`, the OS system pool is
+- **`include-system`**: Whether to include the system certificate pool as
+  part of this context's cert pool. When `true`, the system pool is
   combined with the certificates in `x509`. When `false` or absent, only the
   certificates explicitly listed in `x509` are trusted. Setting
-  `include-system: true` is the most common way to extend the OS pool with a
+  `include-system: true` is the most common way to extend the system pool with a
   private CA without requiring privileged access to the system certificate
   store.
 
 
-## Referencing a Trust Context
+### Referencing a Trust Context
 
-### From a service
+#### From a service
 
 A `trust-context` field is added to service definitions. It accepts a
 plain context name string.
@@ -148,7 +153,7 @@ plan validation fails.
 In `override: merge` context, `trust-context` follows standard field-level
 merge semantics: the later layer's value replaces the earlier one if set.
 
-### From an exec check
+#### From an exec check
 
 A `trust-context` field is added to the `exec` check sub-block. It accepts a
 plain context name string:
@@ -169,7 +174,7 @@ environment before running the command, following the same rules as
 If `trust-context` references a name that does not exist in the combined plan,
 plan validation fails.
 
-### From pebble exec
+#### From `pebble exec`
 
 `pebble exec` accepts a `--trust-context <name>` flag that names a trust
 context from the combined plan. When set, Pebble injects the standard
@@ -182,7 +187,7 @@ plan; otherwise the command fails before the remote process is started.
 that context is inherited automatically. An explicit `--trust-context` always
 takes precedence.
 
-### From an HTTP check
+#### From an HTTP check
 
 A `trust-context` field is added to the `http` check sub-block. It accepts a
 plain context name string.
@@ -199,7 +204,7 @@ checks:
 ```
 
 When set, Pebble uses the context's resolved cert pool to verify the server
-certificate on the HTTPS connection. When absent, the OS system certificate
+certificate on the HTTPS connection. When absent, the system certificate
 pool is used.
 
 `trust-context` has no effect when the check URL uses the `http://` scheme.
@@ -210,7 +215,7 @@ this allows a check URL to be overridden between layers from `http://` to
 If `trust-context` references a name that does not exist in the combined plan,
 plan validation fails.
 
-### From a log target
+#### From a log target
 
 A `trust-context` field is added to `log-targets` entries. It accepts a
 plain context name string.
@@ -228,7 +233,7 @@ log-targets:
 ```
 
 When set, Pebble uses the context's resolved cert pool for all outbound
-connections to `location`. When absent, the OS system certificate pool is
+connections to `location`. When absent, the system certificate pool is
 used.
 
 `trust-context` applies to all three log target types:
@@ -237,7 +242,7 @@ used.
 - **`opentelemetry`**: used for the HTTPS connection to the OTLP/HTTP
   endpoint.
 - **`syslog`**: setting `trust-context` on a syslog log target causes plan
-  validation to fail. A future spec will define TLS syslog transport.
+  validation to fail. A future spec may define TLS syslog transport.
 
 `trust-context` is accepted but has no effect when `location` uses the
 `http://` scheme. Pebble does not require `https://` to be present when
@@ -248,18 +253,17 @@ If `trust-context` references a name that does not exist in the combined plan,
 plan validation fails.
 
 
-## Service and Exec Injection
+### Service and Exec Injection
 
 When a service or exec check is associated with a trust context, Pebble
 writes a PEM bundle file and injects environment variables before the process
 or command starts.
 
-### Bundle file
+#### Bundle file
 
 Pebble resolves the context's cert pool and writes the resulting set of CA
 certificates to a PEM file at
-`<PebbleDir>/trust/<context-name>.pem`. The file is created with permissions
-`0644`.
+`$PEBBLE/trust/<context-name>.pem`. The file is created with permissions `0644`.
 
 When resolving `x509.ca-cert-files`, Pebble checks each file's permissions
 before reading it. If a file's mode has any bit set outside of `0644`
@@ -274,7 +278,7 @@ context's resolved content. The same file is shared by all consumers of a
 given context (services, exec checks, `pebble exec` invocations). Files are
 not removed while their context remains defined in the plan.
 
-### Standard environment variable
+#### Standard environment variable
 
 Pebble always injects the following environment variable pointing at the
 bundle file path:
@@ -286,10 +290,10 @@ bundle file path:
 Other well-known CA-bundle environment variables (`REQUESTS_CA_BUNDLE`,
 `CURL_CA_BUNDLE`, `NODE_EXTRA_CA_CERTS`, `SSL_CERT_DIR`) were considered
 but are out of scope for this spec. A future spec may revisit auto-injecting
-a wider set — for example, via a `presets:` field — once there is operational
-evidence about which combinations are needed.
+a wider set — once there is operational evidence about which combinations are
+needed.
 
-### Non-overwrite rule
+#### Non-overwrite rule
 
 Each variable is only injected if it is not already present in the service's
 or exec check's resolved environment. An operator can suppress the injected
@@ -297,14 +301,14 @@ variable by explicitly setting it in the service `environment:` block or the
 exec check `environment:` block; Pebble will not overwrite an explicitly set
 value.
 
-### When no trust context is set
+#### When no trust context is set
 
 When no `trust-context` is configured on a service or exec check, no bundle
 file is written and no environment variables are injected. Services and exec
 commands receive no extra environment variables and use whatever certificate
-trust their runtime provides.
+trust their runtime provides (e.g. the system pool).
 
-### When does a trust change take effect?
+#### When does a trust change take effect?
 
 When a plan change alters a trust context or a consumer's `trust-context`
 reference, the change takes effect at different times depending on the
@@ -319,18 +323,18 @@ consumer type:
   change, without requiring a restart.
 
 
-## Layer Merge Semantics
+### Layer Merge Semantics
 
 Trust context entries follow the same `override: merge | replace` rules used
 by `log-targets` and `checks`, with one field-level difference for `x509.ca-cert`.
 
-### `override: replace`
+#### `override: replace`
 
 The later layer's entry entirely replaces any existing definition with the
 same name. The resulting context has exactly the fields specified in the
 later layer.
 
-### `override: merge`
+#### `override: merge`
 
 Fields are merged as follows:
 
@@ -344,7 +348,7 @@ The concatenation behaviour for `ca-cert` is intentional: the purpose of
 merging a trust context is to extend a bundle, not to replace it. An overlay
 layer that needs to replace a bundle entirely should use `override: replace`.
 
-### Plan validation
+#### Plan validation
 
 After all layers are combined, Pebble validates the complete plan:
 
@@ -360,9 +364,9 @@ After all layers are combined, Pebble validates the complete plan:
 - `override` must be `merge` or `replace`.
 
 
-## Examples
+### Examples
 
-### HTTPS health check with a private CA
+#### HTTPS health check with a private CA
 
 ```yaml
 trust-contexts:
@@ -384,12 +388,12 @@ checks:
             trust-context: internal-ca
 ```
 
-`internal-ca` sets `include-system: true`, so its pool contains the OS
-system certificates plus the private root CA. The check verifies the server
+`internal-ca` sets `include-system: true`, so its pool contains the system
+certificates plus the private root CA. The check verifies the server
 certificate against both, so publicly signed and privately signed endpoints
 both work.
 
-### Service and log target sharing one trust context
+#### Service and log target sharing one trust context
 
 ```yaml
 trust-contexts:
@@ -421,7 +425,7 @@ log-targets:
 forwarding to the private Loki instance uses the same cert pool for its
 HTTPS connection.
 
-### Isolated trust (no system pool)
+#### Isolated trust (no system pool)
 
 ```yaml
 trust-contexts:
@@ -445,10 +449,10 @@ checks:
 ```
 
 `corp-ca` has no `include-system`, so its pool contains only the listed
-certificates — the OS system pool is excluded. The check trusts only those
+certificates — the system pool is excluded. The check trusts only those
 two certificates and no public CAs.
 
-### Multi-layer composition: adding a CA in an overlay
+#### Multi-layer composition: adding a CA in an overlay
 
 Base layer (`001-base.yaml`):
 ```yaml
@@ -481,7 +485,7 @@ trust-contexts:
                 -----END CERTIFICATE-----
 ```
 
-The combined `site-ca` context includes the OS system pool (from
+The combined `site-ca` context includes the system pool (from
 `include-system: true` in the base layer), the site root, and the site
 intermediate. `web-server` receives all three in a single bundle file.
 Neither layer needs to know the full set of certificates ahead of time.
@@ -490,9 +494,9 @@ If the override layer had used `override: replace`, the site root from the
 base layer would be lost.
 
 
-## Relation to Existing Features
+### Relation to Existing Features
 
-### Relation to the Pebble TLS daemon (`tlsstate`)
+#### Relation to the Pebble TLS daemon (`tlsstate`)
 
 The `trust-contexts` section is entirely separate from Pebble's existing TLS
 infrastructure. `tlsstate` manages the daemon's own HTTPS server certificate
@@ -500,20 +504,20 @@ and client identity for the Pebble API (pairing). Trust contexts manage
 outbound TLS verification for checks, log forwarding, and service injection.
 The two systems do not interact.
 
-### Relation to log-targets
+#### Relation to log-targets
 
 `trust-context` is a new optional field on existing `log-targets` entries. No
 other log-target fields are changed. Existing layer files with no
-`trust-context` continue to work without modification, using the OS system pool
+`trust-context` continue to work without modification, using the system pool
 as before.
 
-### Relation to checks
+#### Relation to checks
 
 `trust-context` is a new optional field on `http` check sub-blocks and `exec`
 check sub-blocks. TCP check sub-blocks are unaffected.
 
 
-## Out of Scope
+### Out of Scope
 
 - **Client certificates (mTLS)**: The `x509` trust context type covers only
   server verification (CA bundles). Supplying `client-cert` and `client-key`
@@ -530,6 +534,7 @@ check sub-blocks. TCP check sub-blocks are unaffected.
   contexts are purely additive (certificates are appended to the pool).
   Disabling certificate verification is not supported.
 
+<!-- mdtog end -->
 
 ## Appendix: Future Extensions
 
@@ -654,18 +659,3 @@ environment variables (`SSH_AUTH_SOCK`), and config files (`~/.ssh/config`),
 there are no widely adopted standard environment variable names for SSH trust
 paths. The specific variable names and injection mechanism would need to be
 defined in the implementing spec.
-
-**Open questions** a future spec would need to address:
-
-- SSH certificates (issued by an SSH CA via `ssh-keygen -s`) blur the line
-  between `client-key` and `known-hosts`. A `ca-public-key` field analogous
-  to `ca-cert` may be needed to represent the SSH CA public key used to
-  validate host or user certificates.
-- Passphrase-protected private keys cannot be written to a file and used by
-  an automated process without the passphrase. The spec would need to decide
-  whether to reject passphrase-protected keys at plan validation or to
-  provide a passphrase injection mechanism.
-- `authorized-keys` is primarily useful when Pebble or a service acts as an
-  SSH server. Whether that use case is in scope depends on how Pebble's role
-  evolves; it may be better handled as a dedicated `authorized-keys` section
-  rather than folded into `trust`.
