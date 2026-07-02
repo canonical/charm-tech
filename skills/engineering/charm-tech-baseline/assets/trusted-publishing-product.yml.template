@@ -1,31 +1,29 @@
 # Canonical shape for a Trusted-Publishing-based PyPI release workflow.
-# Tier: personal, canonical (inline CycloneDX SBOM + dual attestation).
-# For tier=product, use trusted-publishing-product.yml.template instead.
+# Tier: product (SBOM handled by canonical/sbomber via a reusable secscan job).
+# For tier=personal|canonical, use trusted-publishing.yml.template instead.
 #
 # Fill in before use:
 #   - REPLACE_WITH_PROJECT_NAME (PyPI project slug, appears in environment.url)
-#   - Tag pattern under `on.push.tags` (default: v*; operator uses [1-3].*)
+#   - Tag pattern under `on.push.tags`
 #
 # Before committing: modernise every SHA-pinned action below. For each `uses:`
 # line, look up the latest release on GitHub, replace the SHA with the current
 # commit SHA of that release, and update the trailing `# vX.Y.Z` version
 # comment. The pins in this template are a snapshot and drift over time. The
-# result must pass zizmor (which enforces SHA pinning, permissions:{},
-# persist-credentials:false, and the rest of the anti-patterns listed below).
+# result must pass zizmor with no findings.
+#
+# This template pairs with:
+#   - .github/workflows/sbom-secscan.yaml (from sbom-secscan.yaml.template)
+#   - .sbomber-manifest-sdist.yaml         (from sbomber-manifest-sdist.yaml.template)
+#   - .sbomber-manifest-wheel.yaml         (from sbomber-manifest-wheel.yaml.template)
 #
 # Anti-patterns this template avoids (and zizmor enforces):
 #   - No password:/username: on pypa/gh-action-pypi-publish (Trusted Publishing).
 #   - No twine upload step.
-#   - No floating action tags — every third-party action is SHA-pinned with a
-#     version comment.
-#   - id-token: write + attestations: write scoped to this job only.
+#   - Every third-party action is SHA-pinned with a version comment.
+#   - id-token: write + attestations: write scoped to the publish job only.
 #   - persist-credentials: false on every checkout.
-#   - enable-cache: false on setup-uv (avoids cache-poisoning of the release).
-#
-# Two separate attestations are produced: SLSA provenance (how it was built)
-# via attest-build-provenance, and a CycloneDX SBOM predicate (what's inside)
-# via attest-sbom. attest-build-provenance does not accept sbom-path, so the
-# SBOM predicate needs its own call.
+#   - enable-cache: false on setup-uv.
 
 name: Publish
 
@@ -44,7 +42,7 @@ jobs:
       url: https://pypi.org/p/REPLACE_WITH_PROJECT_NAME
     permissions:
       id-token: write      # OIDC to PyPI + sigstore for attestations.
-      attestations: write  # Write build-provenance + SBOM predicates.
+      attestations: write  # Write build-provenance predicate.
       contents: read
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6
@@ -58,30 +56,16 @@ jobs:
       - name: Build sdist and wheel
         run: uv build
 
-      - name: Generate CycloneDX SBOM
-        run: |
-          uv sync --frozen --no-dev
-          uv run --with cyclonedx-bom cyclonedx-py environment .venv \
-            --output-format JSON \
-            --output-file sbom.cdx.json
-
       - name: Attest build provenance (SLSA)
         uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373  # v4.1.1
         with:
           subject-path: 'dist/*'
 
-      - name: Attest SBOM (CycloneDX)
-        uses: actions/attest-sbom@bd218ad0dbcb3e146bd073d1d9c6d78e08aa8a0b  # v2
-        with:
-          subject-path: 'dist/*'
-          sbom-path: sbom.cdx.json
-
-      - name: Upload SBOM artifact
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
-        with:
-          name: sbom
-          path: sbom.cdx.json
-          if-no-files-found: error
-
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # release/v1
+
+  secscan:
+    # SBOM + Canonical secscan (product-tier requirement).
+    # The reusable workflow generates SBOMs via canonical/sbomber for each
+    # artefact type in .sbomber-manifest-*.yaml.
+    uses: ./.github/workflows/sbom-secscan.yaml

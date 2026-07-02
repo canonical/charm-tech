@@ -104,7 +104,23 @@ def main() -> int:
         CHECK_ID, "fail",
         f"PyPI publishing is not fully on Trusted Publishing: {joined}.",
         evidence,
-        {"kind": "judgement", "human_review": "Convert the publish workflow to Trusted Publishing: drop password/username inputs, add permissions: { id-token: write } at the job (or workflow) level, configure the PyPI project/environment as a Trusted Publisher, and revoke any leftover API tokens. See assets/trusted-publishing.yml.template for the canonical shape."},
+        {"kind": "judgement", "human_review": (
+            "Convert the publish workflow to Trusted Publishing: drop "
+            "password/username inputs, add permissions: { id-token: write } "
+            "at the job level, configure the PyPI project/environment as a "
+            "Trusted Publisher, and revoke any leftover API tokens. "
+            "Templates (fill in REPLACE_WITH_* markers before use): "
+            "personal|canonical → assets/trusted-publishing.yml.template "
+            "(inline CycloneDX SBOM + dual attestation); "
+            "product → assets/trusted-publishing-product.yml.template + "
+            "assets/sbom-secscan.yaml.template + "
+            "assets/sbomber-manifest-{sdist,wheel}.yaml.template. "
+            "Before committing, modernise pinned action versions: for every "
+            "third-party action, look up the latest release on GitHub, pin "
+            "it by commit SHA, and update the `# vX.Y.Z` comment. Environment "
+            "name is `publish-pypi` (fleet convention). The result must pass "
+            "zizmor with no findings."
+        )},
     )
     return EXIT_FAIL
 
