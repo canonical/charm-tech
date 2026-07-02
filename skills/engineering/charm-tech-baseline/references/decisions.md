@@ -134,6 +134,35 @@ CODEOWNERS file that references only the Charm Tech team wholesale (no
 benefit; adds review friction) — i.e. the anti-pattern is a file that
 does nothing.
 
+## PR-review ergonomics — conversation resolution and dismiss-stale-on-push not required
+
+Resolved 2026-07-02. The Canonical Security "How-To: Secure a repo"
+page recommends both `Require conversation resolution` and `dismiss
+stale reviews on new commits` on protected branches. The team has
+decided **against** requiring either at this time.
+
+**Conversation resolution required.** Rationale: the team already
+treats unresolved threads as a review-blocker socially; making it a
+merge gate adds friction (author must chase every threaded "nit" the
+reviewer intended as advisory), and every pushed follow-up commit
+would need a fresh comment-resolution round. Net-negative for
+Charm-Tech-sized PRs where the reviewer set is small and consistent.
+
+**Dismiss stale reviews on new commits.** Rationale: most Charm Tech
+PRs iterate quickly under reviewer feedback; auto-dismissing on every
+push makes even trivial rebases / typo fixes re-trigger the full
+review round. The `Require last push approval` flag (already
+recommended in the CRA baseline) covers the substantive risk
+(unreviewed content sneaking in after approval) without the churn of
+full dismissal.
+
+Both to be re-evaluated in a future cycle (26.10+1), especially if the
+team scales or if we see a real incident tied to their absence.
+
+A repo without `require_conversation_resolution` or without dismiss-
+stale-on-push on its default-branch ruleset is **not** a gap in this
+cycle. A check should not flag either.
+
 ## Signed commits — not required this cycle
 
 Resolved 2026-07-02, after the Canonical Security "Repository security"
