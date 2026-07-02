@@ -54,6 +54,57 @@ whatever score-improvement conventions land there first.
 branch-protection wiring, allowlisted-checks shape, badge rendering),
 then sweep the workflow + consider a badge across the other 9 repos.
 
+## Go-module minimum-release-age — no native equivalent
+
+**Status:** Gap identified 2026-07-02 while rolling out
+`exclude-newer = "7 days"` across the fleet's uv repos (see
+[`decisions.md`](decisions.md) and the `uv-exclude-newer` check).
+
+The Python side is covered: `[tool.uv].exclude-newer = "7 days"`
+gives every uv resolution path (manual `uv add`, `uv lock` regens,
+uvx bootstraps, CI re-resolves) a rolling 7-day quarantine on fresh
+releases, complementing the existing Dependabot cooldown.
+
+**Go has no native equivalent.** Go's module resolver offers:
+
+- `go.sum` + `-mod=readonly` (default) — analogous to `uv.lock` +
+  `--locked`. Prevents silent modification of go.mod/go.sum during
+  `go build`/`go test`. Already in place on pebble and concierge.
+- Dependabot / Renovate `minimumReleaseAge` — works for the `gomod`
+  ecosystem, so the Dependabot-authored path is covered.
+
+But there is no `go.mod` directive, `GOFLAGS` value, or `go` env var
+that says "refuse to consider modules published in the last N days"
+during resolution. So the residual vector — a developer running
+`go get -u <mod>@latest` or `go mod tidy` locally, pulling a fresh
+release straight into go.sum before Dependabot could have cooled it
+down — is unaddressed on pebble and concierge.
+
+**Options considered:**
+
+1. **Custom CI check** — script that reads go.sum, queries
+   `proxy.golang.org` for each module's `.info` (which has a `Time`
+   field), fails if any version is younger than 7 days. Bespoke;
+   ~30 lines of Bash/Go. Would sit alongside `govulncheck`.
+2. **Private module proxy with a cooldown policy** — Athens (open
+   source) or JFrog Artifactory. Whole team would need to point
+   `GOPROXY` at it. Overkill for two Go repos.
+3. **PR-diff inspection** — only cross-check go.sum entries added by
+   the PR. Cheaper variant of (1).
+4. **Accept the residual risk** — pebble and concierge have small
+   dependency graphs, tight review cadence, and are already covered
+   by `govulncheck` + `dependency-review-action` (`fail-on-severity:
+   high`, fleet-wide).
+
+**Plan:** deferred. Watch `golang/go` issues for a native
+`min-release-age` proposal. If the fleet's Go footprint grows or a
+concrete incident traces to this vector, revisit and default to
+option 3 (PR-diff inspection — smallest surface area, no proxy
+infra). Not a `fail` in the audit report on Go repos today.
+
+A check should not flag pebble or concierge for missing a Go-side
+release-age control in the 26.10 cycle.
+
 ## `pypa/*` ref-pin posture — resolved
 
 **Resolved:** the team took option (a) — tighten to SHA-pin — and
