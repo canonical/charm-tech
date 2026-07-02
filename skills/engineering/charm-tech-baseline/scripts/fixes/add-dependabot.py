@@ -33,7 +33,7 @@ def main() -> int:
         return 3
 
     shutil.copy(template, ".github/dependabot.yaml")
-    sys.stdout.write("Wrote .github/dependabot.yaml. Confirm the ecosystem set matches the repo (pip, github-actions by default; uncomment gomod as needed), and that all dev tooling in use by the repo is in the dev tooling group.\n")
+    sys.stdout.write("Wrote .github/dependabot.yaml. Confirm the ecosystem set matches the repo (github-actions + uv by default; swap uv→pip or delete uv and uncomment gomod as needed), prune the `charm-tech` group to what this repo actually depends on, and confirm all dev tooling in use is covered by the `dev-tooling` group.\n")
     return 0
 
 
