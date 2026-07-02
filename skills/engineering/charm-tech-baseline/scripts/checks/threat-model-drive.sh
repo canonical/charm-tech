@@ -2,8 +2,7 @@
 # Check: Threat model — informational only.
 # Tier coverage: product only.
 #
-# Threat models live in the central SSDLC Artifacts Drive (decision
-# resolved 2026-06-23 — see references/decisions.md). This check
+# Threat models live in the central SSDLC Artifacts Drive. This check
 # emits an informational note prompting the agent to confirm the
 # Drive sheet is current for the cycle.
 

@@ -3,7 +3,7 @@
 <!--
 Keep this file SHORT. AGENTS.md is for the first 90 seconds of an
 agent's interaction with the repo: how to run tests, how to lint, how
-to build, where the conventions live. Depth belongs in HACKING.md or
+to build, where the conventions live. Depth belongs in CONTRIBUTING.md or
 docs/. Under ~50 lines is the target.
 -->
 

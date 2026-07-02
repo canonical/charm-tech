@@ -4,10 +4,9 @@
 #
 # Convention: Charm Tech (and the broader Canonical convention) prefers
 # the explicit `.yaml` spelling — matching the official YAML spec and the
-# pattern already used by every Charm Tech-authored workflow this cycle.
+# pattern already used by almost every Charm Tech-authored workflow this cycle.
 # Mixed extensions inside one repo also defeat tooling globs that only
-# match one form (the skill's own checks have to handle both, which is
-# the symptom that triggered this).
+# match one form.
 #
 # Scope: anything under .github/ — workflows, dependabot, zizmor,
 # issue templates, etc. Anything outside .github/ (Snapcraft snapcraft.yaml,

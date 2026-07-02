@@ -85,9 +85,8 @@ The skill currently ships these checks. New checks land in [`scripts/checks/`](s
 | `contributing` | product, canonical | Convention | `CONTRIBUTING.md` *or* `HACKING.md` *or* `docs/contributing.md` accepted, AND a `# Pull requests` heading so the validate-pr-title.py "Read more" URL anchors. Template at [`assets/CONTRIBUTING.md.template`](assets/CONTRIBUTING.md.template) follows the dominant Charm Tech pattern (substantive standalone doc; no SECURITY/CoC cross-links — those live in their own files). |
 | `agents-md` | all | Best-of-class | Minimal AGENTS.md (warns past 200 lines). |
 | `pre-commit-config` | all | Convention | Flags `rev:` version pins (versions belong in `pyproject.toml`). |
-| `gha-sha-pinning` | all | Astral best-of-class | Third-party actions SHA-pinned; `actions/`, `github/`, `pypa/`, `canonical/` exceptions allowed. |
+| `gha-sha-pinning` | all | Astral best-of-class | All actions SHA-pinned; no exceptions allowed. |
 | `yaml-extension` | all | Convention | YAML files under `.github/` must use `.yaml`, not `.yml`. Mechanical fix at [`scripts/fixes/rename-yml-to-yaml.sh`](scripts/fixes/rename-yml-to-yaml.sh) uses `git mv`; a manual sweep is still needed for `workflow_call uses:` paths, README links, and downstream action consumers. |
-| `zizmor-config` | product, canonical | Convention | Config file + workflow invocation. |
 | `dependency-review` | product, canonical | Cycle sweep | `actions/dependency-review-action` wired. |
 | `attest-build-provenance` | product, canonical | SEC0023 best-of-class | Required when a publish/release workflow exists. |
 | `openssf-scorecard` | product, canonical | Best-of-class (gated on operator) | Workflow + README badge. |
