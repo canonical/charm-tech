@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Check: third-party GHA actions are SHA-pinned, with the documented
-# exception for GitHub-owned and PyPA-owned actions (see
-# references/decisions.md).
+# Check: every third-party GHA action is SHA-pinned. No exceptions —
+# `actions/*`, `github/*`, `pypa/*`, `canonical/*` all pin to a commit
+# SHA, same as any other third-party action (see references/decisions.md).
 #
 # Tier coverage: product, canonical, personal.
 #
 # Implementation: greps `uses:` lines under .github/workflows/. A ref is
-# SHA-pinned iff it matches a 40-char hex string. Refs of the form
-# `actions/*`, `github/*`, `pypa/*` are allowed to use tags or branches.
+# SHA-pinned iff it matches a 40-char hex string. Local action refs
+# (`./...`) are skipped.
 
 set -uo pipefail
 script_dir=$(dirname -- "${BASH_SOURCE[0]}")
@@ -46,13 +46,9 @@ while IFS= read -r line; do
     [ "${ref:0:2}" = "./" ] && continue   # local action
     [ "${ref:0:1}" = "." ] && continue
     total=$((total + 1))
-    repo_part=${ref%@*}
     after_at=${ref#*@}
-    # Allow GitHub-owned, PyPA-owned, and the org-owned canonical/* actions.
-    case "$repo_part" in
-        actions/*|github/*|pypa/*|canonical/*) continue ;;
-    esac
-    # SHA-pinned iff after_at is 40 hex chars.
+    # SHA-pinned iff after_at is 40 hex chars. No allowlist — every
+    # third-party action must SHA-pin.
     if ! printf '%s' "$after_at" | grep -qE '^[0-9a-fA-F]{40}$'; then
         violations=$((violations + 1))
         violators="$violators $ref"
@@ -61,7 +57,7 @@ done < <(grep -hE '^[[:space:]]*-?[[:space:]]*uses:[[:space:]]+' .github/workflo
 
 if [ "$violations" -eq 0 ]; then
     emit_check "$CHECK_ID" "pass" \
-        "All third-party GHA actions SHA-pinned (allowed exceptions: actions/, github/, pypa/, canonical/)." \
+        "All third-party GHA actions SHA-pinned (no exceptions)." \
         "{\"actions_inspected\":$total}"
     exit 0
 fi
@@ -70,5 +66,5 @@ trimmed=$(printf '%s' "$violators" | sed 's/^ //' | tr ' ' ',' )
 emit_check "$CHECK_ID" "fail" \
     "$violations third-party action ref(s) not SHA-pinned." \
     "{\"actions_inspected\":$total,\"non_pinned\":\"$trimmed\"}" \
-    '{"kind":"judgement","human_review":"Replace each non-pinned ref with the upstream commit SHA + a # vX.Y.Z comment. Confirm zizmor.yml allows the appropriate ref-pin exceptions."}'
+    '{"kind":"judgement","human_review":"Replace each non-pinned ref with the upstream commit SHA + a # vX.Y.Z comment. No allowlist exceptions — actions/, github/, pypa/, canonical/ all pin the same way."}'
 exit 1

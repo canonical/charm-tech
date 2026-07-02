@@ -17,25 +17,31 @@ A repo configured with full no-bypass is **not** a gap — it is a
 stricter policy. A repo configured with `Admins` / `always` **is** a
 gap — flag it.
 
-## SHA-pinning exceptions — GitHub-owned and PyPA-owned actions stay `ref-pin`
+## SHA-pinning — every third-party action, no exceptions
 
-Every Charm Tech repo SHA-pins third-party GitHub Actions. zizmor
-enforces this. A deliberate `ref-pin` exception applies to:
+Every Charm Tech repo SHA-pins **every** third-party GitHub Action.
+`actions/*`, `github/*`, `pypa/*`, `canonical/*` — all pin to a commit
+SHA, same as any other third-party action. The prior ref-pin carve-out
+for GitHub-owned and PyPA-owned actions has been retired: the `pypa/*`
+open investigation surfaced `release/v1` as a moving *branch* (not a
+tag), and rather than special-case one org and leave the others on a
+weaker rationale, the whole allowlist is dropped. Uniform SHA-pinning is
+the policy.
 
-- GitHub-owned actions: `actions/*`, `github/*`
-- PyPA-owned actions: `pypa/*`
+The standard form is `actions/checkout@<40-char-sha> # v4.x.y` — SHA
+first, human-readable tag in a trailing comment so Dependabot can bump
+both together.
 
-These ride major tags. Rationale: if GitHub or PyPA themselves are
-compromised, the whole toolchain is compromised — SHA-pinning their
-actions buys negligible marginal safety while adding upgrade friction.
+A `.github/zizmor.yaml` config file is **no longer required**. zizmor's
+default `unpinned-uses` rule already enforces SHA-pinning across the
+board; the previous config existed only to carry the now-retired
+allowlist. Existing `.github/zizmor.yaml` files that only encode the old
+allowlist should be deleted (the check no longer looks for a config
+file, only for a workflow that invokes zizmor).
 
-A repo with `actions/checkout@v4` is **not** a gap. A repo with
-`some-third-party/foo@v1` (without SHA) **is**.
-
-**Caveat (open investigation):** the `pypa/*` posture is being
-re-examined — `release/v1` on `pypa/gh-action-pypi-publish` is a moving
-*branch* (not a tag), making the exception weaker than the rationale
-assumed. See [`open-investigations.md`](open-investigations.md).
+A repo with `actions/checkout@v4`, `pypa/gh-action-pypi-publish@release/v1`,
+or `canonical/foo@v2` **is** a gap. A repo with all `uses:` refs pinned
+to 40-char SHAs is not.
 
 ## Tool pinning — `pyproject.toml` is the source of truth
 

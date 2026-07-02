@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# Check: zizmor is wired up (workflow + config).
+# Check: zizmor is invoked in CI.
 # Tier coverage: product, canonical.
 #
-# Looks for: .github/zizmor.yml (or .yaml) AND a workflow that invokes
-# zizmor (either via the action or `uvx zizmor`).
+# A .github/zizmor.yaml config file is no longer required — the pinning
+# policy has no allowlist exceptions, so zizmor's default unpinned-uses
+# rule is sufficient. If a config file exists it is not flagged, but
+# it's redundant.
 
 set -uo pipefail
 script_dir=$(dirname -- "${BASH_SOURCE[0]}")
@@ -25,11 +27,6 @@ fi
 
 cd "$(repo_root)" || exit 3
 
-config=""
-for path in .github/zizmor.yml .github/zizmor.yaml; do
-    [ -f "$path" ] && config="$path" && break
-done
-
 workflow_hits=""
 if [ -d .github/workflows ]; then
     # Accept any of: the official woodruffw/zizmor-action; `uvx zizmor`;
@@ -41,32 +38,16 @@ if [ -d .github/workflows ]; then
         .github/workflows/*.y*ml 2>/dev/null || true)
 fi
 
-if [ -n "$config" ] && [ -n "$workflow_hits" ]; then
+if [ -n "$workflow_hits" ]; then
     first=$(printf '%s' "$workflow_hits" | head -1)
     emit_check "$CHECK_ID" "pass" \
-        "zizmor configured ($config) and run in CI ($first)." \
-        "{\"config\":\"$config\",\"workflow\":\"$first\"}"
+        "zizmor invoked in CI ($first)." \
+        "{\"workflow\":\"$first\"}"
     exit 0
 fi
 
-if [ -n "$config" ] && [ -z "$workflow_hits" ]; then
-    emit_check "$CHECK_ID" "fail" \
-        "zizmor config present but no workflow runs it." \
-        "{\"config\":\"$config\"}" \
-        '{"kind":"judgement","human_review":"Add a CI step running zizmor (the canonical org pins a specific SHA in operator/jubilant)."}'
-    exit 1
-fi
-
-if [ -z "$config" ] && [ -n "$workflow_hits" ]; then
-    emit_check "$CHECK_ID" "fail" \
-        "Workflow invokes zizmor but no .github/zizmor.yml config." \
-        '{}' \
-        '{"kind":"mechanical","script":"scripts/fixes/add-zizmor-config.sh","human_review":"Confirm allowlist matches actually-used actions."}'
-    exit 1
-fi
-
 emit_check "$CHECK_ID" "fail" \
-    "No zizmor config or workflow." \
+    "No workflow invokes zizmor." \
     '{}' \
-    '{"kind":"judgement","human_review":"Add .github/zizmor.yml (allowlist for actions/, github/, pypa/, canonical/ ref-pin) and a CI step (uvx zizmor against .github/workflows/)."}'
+    '{"kind":"judgement","human_review":"Add a CI step that runs zizmor against .github/workflows/ (uvx zizmor, or via the project'\''s lint dependency-group). No .github/zizmor.yaml config file is required — the default unpinned-uses rule enforces SHA-pinning without an allowlist."}'
 exit 1

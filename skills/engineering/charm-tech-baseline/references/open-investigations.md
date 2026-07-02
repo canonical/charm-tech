@@ -54,21 +54,11 @@ whatever score-improvement conventions land there first.
 branch-protection wiring, allowlisted-checks shape, badge rendering),
 then sweep the workflow + consider a badge across the other 9 repos.
 
-## `pypa/*` ref-pin posture — team discussion
+## `pypa/*` ref-pin posture — resolved
 
-**Status:** Awaiting team discussion.
-
-**Issue:** the existing `pypa/*` ref-pin exception (see
-[`decisions.md`](decisions.md)) was rationalised as "trusted PyPA org,
-major tag is fine."
-
-**Options:**
-
-- (a) Tighten to SHA-pin: ~6-line edit across 6 workflow files +
-  drop the `pypa/*` exception from 4 `zizmor.yaml` files. Mechanical,
-  low-risk.
-- (b) Keep the exception but require the team to acknowledge the
-  moving-branch posture explicitly.
-
-**Audit behaviour:** treat a `pypa/*@release/v1` ref as a *note* (not a
-gap) until the team picks (a) or (b).
+**Resolved:** the team took option (a) — tighten to SHA-pin — and
+extended it to the whole allowlist (`actions/*`, `github/*`, `pypa/*`,
+`canonical/*`). Every third-party action pins to a SHA, no exceptions.
+See [`decisions.md`](decisions.md). `.github/zizmor.yaml` config files
+are no longer needed; the check ([`scripts/checks/gha-sha-pinning.sh`](../scripts/checks/gha-sha-pinning.sh))
+flags any non-SHA `uses:` ref.
