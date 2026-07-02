@@ -87,6 +87,7 @@ The skill currently ships these checks. New checks land in [`scripts/checks/`](s
 | `pre-commit-config` | all | Convention | Flags `rev:` version pins (versions belong in `pyproject.toml`). |
 | `gha-sha-pinning` | all | Astral best-of-class | All actions SHA-pinned; no exceptions allowed. |
 | `yaml-extension` | all | Convention | YAML files under `.github/` must use `.yaml`, not `.yml`. Mechanical fix at [`scripts/fixes/rename-yml-to-yaml.sh`](scripts/fixes/rename-yml-to-yaml.sh) uses `git mv`; a manual sweep is still needed for `workflow_call uses:` paths, README links, and downstream action consumers. |
+| `workflow-secrets` | all | Canonical Security "Repository security" — Secrets | Scans `.github/workflows/*.y*ml` for four leakage patterns: (1) workflow-level `env:` referencing `${{ secrets.* }}`; (2) job-level `env:` referencing `${{ secrets.* }}` (both over-scope the secret beyond the step that needs it); (3) `run: echo`/`printf`/`cat` interpolating a secret expression (log-masking not guaranteed for every transformation); (4) `secrets: inherit` on reusable-workflow calls. Env-scope checks need python3+PyYAML; textual checks (echo/inherit) run either way. Personal-tier: advisory. |
 | `dependency-review` | product, canonical | Cycle sweep | `actions/dependency-review-action` wired. |
 | `attest-build-provenance` | product, canonical | SEC0023 best-of-class | Required when a publish/release workflow exists. |
 | `openssf-scorecard` | product, canonical | Best-of-class (gated on operator) | Workflow + README badge. |
