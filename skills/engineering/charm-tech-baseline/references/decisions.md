@@ -104,3 +104,19 @@ Resolved 2026-06-09:
 
 A check should not flag "no SEC0045 events" on jubilant or
 pytest-jubilant.
+
+## Signed commits — not required this cycle
+
+Resolved 2026-07-02, after the Canonical Security "Repository security"
+and "How-To: Secure a repo" pages (published Jul 01, 2026) recommended
+`Require signed commits` on protected branches.
+
+The team has decided **against** requiring signed commits at this time.
+Rationale: the onboarding cost across current + occasional contributors
+outweighs the marginal supply-chain benefit while the org allowlist,
+SHA-pinned actions, branch protection, PR review, and required checks
+are already in place. To be re-evaluated in a future cycle (26.10+1),
+particularly if Security makes it an org-level baseline.
+
+A repo without `require_signed_commits` on its default-branch ruleset
+is **not** a gap in this cycle. A check should not flag it.
