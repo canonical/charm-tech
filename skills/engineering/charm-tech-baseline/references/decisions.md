@@ -105,6 +105,29 @@ Resolved 2026-06-09:
 A check should not flag "no SEC0045 events" on jubilant or
 pytest-jubilant.
 
+## CODEOWNERS — only required when membership exceeds the Charm Tech team
+
+Resolved 2026-07-02. The Canonical Security "Repository security" and
+"How-To: Secure a repo" pages recommend a `CODEOWNERS` file with
+code-owner review required, at minimum for `.github/workflows/`.
+
+For a repo whose maintainer set is exactly the Charm Tech team, a
+`CODEOWNERS` file adds no filtering signal over the existing
+required-review rule (every PR would need review from the same people
+who already review every PR). Overhead without benefit.
+
+**A `CODEOWNERS` file is only required for a charm-tech repo when its
+maintainer/contributor set is broader than the Charm Tech team** —
+external contributors, cross-team ownership, or per-directory owners
+mapping to different sub-teams. In this cycle, that's **charmlibs only**
+(has a substantive `CODEOWNERS` mapping to `@canonical/charmlibs-maintainers`).
+
+A repo without `CODEOWNERS` whose maintainer set is the Charm Tech team
+is **not** a gap. A check should not flag it. A check *should* flag a
+CODEOWNERS file that references only the Charm Tech team wholesale (no
+benefit; adds review friction) — i.e. the anti-pattern is a file that
+does nothing.
+
 ## Signed commits — not required this cycle
 
 Resolved 2026-07-02, after the Canonical Security "Repository security"
