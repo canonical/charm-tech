@@ -10,9 +10,7 @@
 version: 2
 
 updates:
-  # ===================================================================
   # GitHub Actions: routine lane (monthly, single grouped PR)
-  # ===================================================================
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
@@ -30,11 +28,9 @@ updates:
         patterns:
           - "*"
 
-  # ===================================================================
   # Python (uv): routine lane (monthly, grouped along three seams).
   # For a pip repo, swap `package-ecosystem: "uv"` → `"pip"`. For a Go
   # repo, delete this whole block and uncomment the gomod block below.
-  # ===================================================================
   - package-ecosystem: "uv"
     directory: "/"
     schedule:
@@ -48,7 +44,7 @@ updates:
       default-days: 7
       semver-major-days: 14
     groups:
-      # Charm Tech's own releases (lockstep-versioned; we trust the release).
+      # Charm Tech's own releases (we trust the release).
       # Prune to whatever this repo actually depends on.
       charm-tech:
         patterns:
@@ -82,10 +78,8 @@ updates:
           - "minor"
           - "patch"
 
-  # ===================================================================
   # Go modules: routine lane (monthly, single grouped PR; a runtime
   # major falls through to its own ungrouped PR). Uncomment for Go repos.
-  # ===================================================================
   # - package-ecosystem: "gomod"
   #   directory: "/"
   #   schedule:
