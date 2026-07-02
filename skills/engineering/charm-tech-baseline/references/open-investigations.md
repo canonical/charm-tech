@@ -111,5 +111,5 @@ release-age control in the 26.10 cycle.
 extended it to the whole allowlist (`actions/*`, `github/*`, `pypa/*`,
 `canonical/*`). Every third-party action pins to a SHA, no exceptions.
 See [`decisions.md`](decisions.md). `.github/zizmor.yaml` config files
-are no longer needed; the check ([`scripts/checks/gha-sha-pinning.sh`](../scripts/checks/gha-sha-pinning.sh))
+are no longer needed; the check ([`scripts/checks/gha-sha-pinning.py`](../scripts/checks/gha-sha-pinning.py))
 flags any non-SHA `uses:` ref.

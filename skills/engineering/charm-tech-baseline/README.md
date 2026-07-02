@@ -12,16 +12,16 @@ This skill consolidates the cycle's output into a form an AI agent can load on d
 
 ```bash
 # audit
-scripts/check.sh                                 # auto-detect tier, JSON output
-scripts/check.sh --tier=personal --format=markdown
-scripts/check.sh --only=security-md,dependabot
+scripts/check.py                                 # auto-detect tier, JSON output
+scripts/check.py --tier=personal --format=markdown
+scripts/check.py --only=security-md,dependabot
 
 # fix (mechanical only — agent must judge)
-scripts/fixes/add-security-md.sh
-scripts/fixes/add-dependabot.sh
+scripts/fixes/add-security-md.py
+scripts/fixes/add-dependabot.py
 ```
 
-The skill itself is the canonical entry point — see [`SKILL.md`](SKILL.md). An AI agent loads `SKILL.md`, runs `check.sh`, reads the JSON report, and uses the references to explain gaps and propose remediation.
+The skill itself is the canonical entry point — see [`SKILL.md`](SKILL.md). An AI agent loads `SKILL.md`, runs `check.py`, reads the JSON report, and uses the references to explain gaps and propose remediation.
 
 ## Layout
 
@@ -36,11 +36,11 @@ references/                # static knowledge; loaded by the agent on demand
   open-investigations.md   # items waiting on external triggers
 assets/                    # file templates used by fix scripts
 scripts/                   # deterministic checks + fixes
-  check.sh                 # umbrella runner; emits JSON or markdown
-  detect-tier.sh           # remote-URL inspection → tier name
+  check.py                 # umbrella runner; emits JSON or markdown
+  detect-tier.py           # remote-URL inspection → tier name
   checks/                  # one script per control
   fixes/                   # one script per mechanical remediation
-  lib/                     # shared shell helpers
+  lib/                     # shared Python helpers (common.py)
 ```
 
 ## Agent-generic
