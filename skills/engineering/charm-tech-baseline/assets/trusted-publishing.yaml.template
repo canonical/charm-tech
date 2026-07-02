@@ -1,6 +1,6 @@
 # Canonical shape for a Trusted-Publishing-based PyPI release workflow.
 # Tier: personal, canonical (inline CycloneDX SBOM + dual attestation).
-# For tier=product, use trusted-publishing-product.yml.template instead.
+# For tier=product, use trusted-publishing-product.yaml.template instead.
 #
 # Fill in before use:
 #   - REPLACE_WITH_PROJECT_NAME (PyPI project slug, appears in environment.url)
