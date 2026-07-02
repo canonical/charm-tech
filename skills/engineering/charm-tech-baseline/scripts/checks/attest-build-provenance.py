@@ -3,10 +3,6 @@
 with a `subject-path:` input, AND ordered to run *before* the publish step.
 Tier coverage: product, canonical.
 
-Cycle reference: sweep complete 2026-06-27 (jubilant#352, pebble#885,
-pytest-jubilant#82+#83 merged); concierge skipped pending goreleaser
-split. See references/sweep-history.md.
-
 Ordering rules:
   - Same job: attest step index must be < publish step index.
   - Cross-job: attest job must transitively appear in the publish job's

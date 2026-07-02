@@ -61,7 +61,6 @@ The agent's job is to read the JSON, identify the gaps that need human judgement
 - [`references/ssdlc-framework.md`](references/ssdlc-framework.md) — what each SEC0XXX requirement actually mandates, where artefacts live, who reviews.
 - [`references/decisions.md`](references/decisions.md) — settled cycle-level decisions and carve-outs (for example, admin bypass is `pull_request` not `always`).
 - [`references/skipped-tools.md`](references/skipped-tools.md) — tools that were *measured* and skipped (harden-runner, actionlint, pydoclint, prek, shellcheck), with the basis. **Do not re-recommend these without new evidence.**
-- [`references/sweep-history.md`](references/sweep-history.md) — what sweeps landed this cycle and which were retracted (for example, pytest-xdist net-loss).
 - [`references/open-investigations.md`](references/open-investigations.md) — items waiting on external triggers (`uv audit` stable, GitHub native L7 firewall GA, OpenSSF Scorecard rollout gated on operator).
 
 ### 4. Apply mechanical fixes

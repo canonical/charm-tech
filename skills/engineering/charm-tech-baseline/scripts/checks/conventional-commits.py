@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """Check: Conventional-commits PR-title enforcement workflow present.
 Tier coverage: product, canonical.
-
-Cycle reference: 7 of 8 merged; see references/sweep-history.md.
 """
 from __future__ import annotations
 

@@ -12,8 +12,7 @@ Two-file pattern (source: canonical/operator):
 Both files are staged from the asset templates. The Python script's _HELP_URL
 placeholder is rewritten to point at this repo's CONTRIBUTING.md so the error
 message links to the right place. The agent should still check the
-CONTRIBUTING.md exists and documents these types; sweep-validate-pr-title.md
-in the roadmap tree records which Charm Tech repos had to add or extend it.
+CONTRIBUTING.md exists and documents these types.
 """
 from __future__ import annotations
 

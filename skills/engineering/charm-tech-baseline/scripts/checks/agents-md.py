@@ -3,7 +3,6 @@
 Tier coverage: product, canonical. Personal-tier: informational only.
 
 Convention: keep it minimal — a short pointer file, not an encyclopaedia.
-See references/sweep-history.md for the deferred AGENTS.md sweep.
 """
 from __future__ import annotations
 

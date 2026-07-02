@@ -32,7 +32,6 @@ references/                # static knowledge; loaded by the agent on demand
   ssdlc-framework.md       # SEC0023 matrix + per-requirement summary
   decisions.md             # settled carve-outs
   skipped-tools.md         # tools we measured and skipped, with the basis
-  sweep-history.md         # sweeps that landed; sweeps that were retracted
   open-investigations.md   # items waiting on external triggers
 assets/                    # file templates used by fix scripts
 scripts/                   # deterministic checks + fixes

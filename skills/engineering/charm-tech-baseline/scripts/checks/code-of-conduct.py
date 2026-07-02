@@ -4,8 +4,7 @@ Tier coverage: product, canonical. (Best-practice for personal too;
 emitted as a softer fail.)
 
 Decision: link-only form pointing at the Ubuntu Code of Conduct, not a
-full Contributor Covenant template. See references/decisions.md and
-references/sweep-history.md (Community-health sweep).
+full Contributor Covenant template. See references/decisions.md.
 """
 from __future__ import annotations
 

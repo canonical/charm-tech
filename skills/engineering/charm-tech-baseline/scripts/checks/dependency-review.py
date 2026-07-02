@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 """Check: actions/dependency-review-action workflow present on PRs.
 Tier coverage: product, canonical.
-
-Cycle reference: sweep landed 2026-06-27 (4 PRs open across operator,
-pebble, jubilant, charmlibs); see references/sweep-history.md.
 """
 from __future__ import annotations
 
