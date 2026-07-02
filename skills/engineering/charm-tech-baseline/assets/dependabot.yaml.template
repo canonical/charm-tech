@@ -21,7 +21,6 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "chore"
-      include: "scope"
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -34,8 +33,7 @@ updates:
       semver-patch-days: 7
     open-pull-requests-limit: 5
     commit-message:
-      prefix: "ci"
-      include: "scope"
+      prefix: "chore"
 
   # Uncomment for Go projects.
   # - package-ecosystem: "gomod"
