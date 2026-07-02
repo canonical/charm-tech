@@ -1,0 +1,12 @@
+# zizmor configuration — GitHub Actions static security review.
+# Cycle convention (references/decisions.md): SHA-pin every third-party
+# action; allow ref-pin exception only for GitHub-owned (actions/, github/)
+# actions.
+
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        "actions/*": ref-pin
+        "github/*": ref-pin
+        "*": hash-pin

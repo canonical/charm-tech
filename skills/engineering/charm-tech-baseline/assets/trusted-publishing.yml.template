@@ -1,0 +1,52 @@
+# Canonical shape for a Trusted-Publishing-based PyPI release workflow.
+#
+# Drop into .github/workflows/release.yml and adapt:
+#   - the trigger (typically `release: { types: [published] }` or a tag push)
+#   - the `environment:` name (must match the Trusted Publisher entry on PyPI)
+#   - the build step (uv build / python -m build / hatch / poetry build / …)
+#
+# Anti-patterns this template avoids:
+#   - No `password:` / `username:` inputs on pypa/gh-action-pypi-publish.
+#   - No `secrets.PYPI_API_TOKEN` reference.
+#   - No `twine upload` step.
+#   - `id-token: write` is scoped to the publish job only; build runs without it.
+
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    # Gated release environment — PyPI Trusted Publisher matches on
+    # (repo, workflow file, job environment). The environment must exist in
+    # the repo Settings → Environments and be referenced when registering the
+    # Trusted Publisher on PyPI.
+    environment:
+      name: pypi
+      url: https://pypi.org/p/REPLACE_WITH_PROJECT_NAME
+    permissions:
+      id-token: write   # OIDC — the only credential needed.
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        # No `password:` / `username:` — Trusted Publishing handles auth via OIDC.

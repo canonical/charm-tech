@@ -1,0 +1,106 @@
+# Settled decisions and carve-outs
+
+These are the **settled** decisions from the 26.10 cycle. Do not
+reopen without new evidence; do not flag them as "gaps" in an audit
+report.
+
+## Admin bypass — `pull_request`, with an emergency escape hatch
+
+Charm Tech ruleset `bypass_actors` = **`Admins` / `pull_request`** (not
+`Admins` / `always`, not full no-bypass). Admins still go through a PR
+— so reviews and required checks remain visible — rather than pushing
+straight to a protected branch. The bypass is deliberately retained as
+an emergency escape hatch (broken CI blocking an urgent fix, incident
+response).
+
+A repo configured with full no-bypass is **not** a gap — it is a
+stricter policy. A repo configured with `Admins` / `always` **is** a
+gap — flag it.
+
+## SHA-pinning exceptions — GitHub-owned and PyPA-owned actions stay `ref-pin`
+
+Every Charm Tech repo SHA-pins third-party GitHub Actions. zizmor
+enforces this. A deliberate `ref-pin` exception applies to:
+
+- GitHub-owned actions: `actions/*`, `github/*`
+- PyPA-owned actions: `pypa/*`
+
+These ride major tags. Rationale: if GitHub or PyPA themselves are
+compromised, the whole toolchain is compromised — SHA-pinning their
+actions buys negligible marginal safety while adding upgrade friction.
+
+A repo with `actions/checkout@v4` is **not** a gap. A repo with
+`some-third-party/foo@v1` (without SHA) **is**.
+
+**Caveat (open investigation):** the `pypa/*` posture is being
+re-examined — `release/v1` on `pypa/gh-action-pypi-publish` is a moving
+*branch* (not a tag), making the exception weaker than the rationale
+assumed. See [`open-investigations.md`](open-investigations.md).
+
+## Tool pinning — `pyproject.toml` is the source of truth
+
+All tool version pins belong in `[dependency-groups]` in
+`pyproject.toml`, locked via `uv.lock`. This applies across every
+invocation surface — pre-commit hooks (`language: system` calling the
+tool from the lockfile), CI, local dev. **No tool versions in
+`.pre-commit-config.yaml` `rev:` fields, no version pins in CI
+workflows.**
+
+## pip-audit (non-product tier only) + Dependabot everywhere
+
+Two-tier:
+
+- **Product tier** (operator, jubilant, pytest-jubilant, charmlibs):
+  Dependabot only. Per-release secscan with `--ssdlc-*` covers the
+  SSDLC requirement.
+- **Non-product tier** (hyrum, charmhub-listing-review,
+  api_demo_server): pip-audit in CI alongside Dependabot.
+
+Forward note: planned replacement of `pip-audit` with `uv audit` once
+stable — see [`open-investigations.md`](open-investigations.md).
+
+## Linear history
+
+Required across Charm Tech repos via CRA. Squash + linear merge
+strategy.
+
+## Required status checks pinned to the GitHub Actions app
+
+`integration_id = 15368` on every CRA ruleset for Charm Tech repos.
+Without this, any app or PAT can satisfy a rule by posting a status of
+the same name. Done for Charm Tech in
+[canonical/canonical-repo-automation#873](https://github.com/canonical/canonical-repo-automation/pull/873)
+(merged 2026-06-09).
+
+This applies to **Canonical-managed rulesets only**, which are
+configured centrally in `canonical-repo-automation`, not per-repo. A
+personal-tier audit must not flag this.
+
+## Immutable releases — on by default; blocked on tooling for some
+
+ON for: operator, jubilant, pytest-jubilant, charmhub-listing-review,
+hyrum.
+
+OFF (legitimate blocker) for: concierge (goreleaser incompat —
+[canonical/concierge#172](https://github.com/canonical/concierge/issues/172)),
+pebble (snap build —
+[canonical/pebble#856](https://github.com/canonical/pebble/issues/856)).
+
+OFF (action needed) for: api_demo_server (no releases yet; toggle when
+first release approaches), charmlibs.
+
+A check for immutable releases must distinguish "blocked on known
+tooling" from "needs toggling".
+
+## SEC0045 applicability — per-product
+
+Resolved 2026-06-09:
+
+- **Done**: ops (operator#1905), pebble (pebble#666)
+- **In scope this cycle**: concierge (concierge#208).
+- **Deferred**: charmlibs (future cycle).
+- **Out of scope**: jubilant, pytest-jubilant (no user/admin/auth
+  surface), charm-ubuntu.
+
+A check should not flag "no SEC0045 events" on jubilant or
+pytest-jubilant.

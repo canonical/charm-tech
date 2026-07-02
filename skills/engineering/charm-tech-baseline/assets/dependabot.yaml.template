@@ -1,0 +1,46 @@
+# Dependabot — update automation for declared package ecosystems.
+# Customise the package-ecosystem set to match this repo. Defaults below
+# cover the common Charm Tech surface: Python (via uv), GitHub Actions,
+# and Docker. Drop any that don't apply; add gomod for Go repos.
+#
+# `cooldown:` (≥7 days) — Charm Tech baseline. Delays raising a PR for a
+# newly published release so a malicious upload caught and yanked within
+# the cooldown window never reaches CI. See charmlibs#499 (2026-05-28).
+
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+      semver-major-days: 7
+      semver-minor-days: 7
+      semver-patch-days: 7
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+      semver-major-days: 7
+      semver-minor-days: 7
+      semver-patch-days: 7
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+
+  # Uncomment for Go projects.
+  # - package-ecosystem: "gomod"
+  #   directory: "/"
+  #   schedule:
+  #     interval: "weekly"
+  #   cooldown:
+  #     default-days: 7

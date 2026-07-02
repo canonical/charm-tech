@@ -1,0 +1,66 @@
+We welcome contributions to this project!
+
+Before working on changes, please consider [opening an issue](https://github.com/REPLACE_WITH_OWNER/REPLACE_WITH_REPO/issues) explaining your use case. If you would like to chat with us about your use cases or proposed implementation, you can reach us on [Matrix](https://matrix.to/#/#charmhub-charmdev:ubuntu.com) or [Discourse](https://discourse.charmhub.io/).
+
+<!--
+For detailed dev-environment setup, build, and test instructions, link here to
+the substantive doc if one exists (HACKING.md, docs/contributing.md, etc.).
+Most Charm Tech repos keep this section inline rather than redirecting.
+-->
+
+# AI
+
+You're welcome to submit pull requests that are partly or entirely generated using generative AI tools. However, you must review the code yourself before moving the PR out of draft -- by submitting the PR, you are claiming personal responsibility for its quality and suitability. If you are not capable of reviewing the PR, please do not submit it (maybe you'd like to open an issue instead). PRs that are clearly (co-)authored by tools will be closed without review unless there is a human author that claims responsibility for the PR.
+
+Please do not use tools (such as GitHub Copilot) to provide PR reviews. The Charm Tech team also has access to these tools, and will use them when appropriate.
+
+# Pull requests
+
+Changes are proposed as [pull requests on GitHub](https://github.com/REPLACE_WITH_OWNER/REPLACE_WITH_REPO/pulls).
+
+- Work on a branch in your own fork.
+- Sequence your commits logically if possible. But don't worry too much -- we'll squash to `main` after review.
+- Don't force-push after review has started.
+- Follow [conventional commit style](https://www.conventionalcommits.org/en/) for the PR title (not required for individual commits).
+
+The allowed PR-title types — enforced by `.github/workflows/validate-pr-title.yaml` — are:
+
+`chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `revert`, `test`
+
+Examples:
+
+- feat: add support for X
+- fix!: correct the type hinting for config data
+- docs: clarify how to use Y
+- ci: tighten the publish workflow
+
+We consider this project too small to use scopes, so we don't use them.
+
+## Branch updates
+
+Before you ask for review, please rebase your branch onto `main` so that your changes will merge cleanly.
+
+If you need to bring in the latest changes from `main` after the review has started, please use a merge commit.
+
+# Releasing
+
+<!--
+Most Charm Tech repos that produce a release artefact include a section
+describing how to cut one. The shape depends on what the repo produces:
+
+- PyPI package (uv build → Trusted Publishing): tag → GitHub Release →
+  release workflow publishes via pypa/gh-action-pypi-publish (OIDC).
+- snap (snapcraft / launchpad build recipe): document the release channel
+  promotion flow (edge → beta → candidate → stable).
+- Go binary (goreleaser): document `git tag vX.Y.Z && git push --tags`
+  and which workflow goreleaser runs from.
+- Charm on Charmhub (charmcraft): document the track/channel and the
+  upload-resource / promote-charm flow.
+- Library shipped via canonical/charmlibs: document the version-bump and
+  publish-library flow.
+
+Replace this comment with the actual procedure. Repos that don't produce a
+discrete release artefact (demos, tutorials, specs, registries) can drop the
+whole section.
+-->
+
