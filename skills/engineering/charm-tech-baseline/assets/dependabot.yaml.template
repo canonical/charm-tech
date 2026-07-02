@@ -1,0 +1,101 @@
+# Routine version-update sweeps only. CVE patches are raised by the
+# repo-level "Dependabot security updates" toggle (managed in
+# canonical-repo-automation: features.dependabot_security_updates = true),
+# which is event-driven and does not honour the schedule below.
+#
+# Canonical shape per OP0xx (Dependabot config conventions for Charm Tech
+# repos). Customise the ecosystem set to match this repo: keep github-actions,
+# then pick ONE of the uv / gomod / pip blocks below. Delta from the canonical
+# shape (per-repo `groups`, extra directories, etc.) belongs in the spec.
+version: 2
+
+updates:
+  # GitHub Actions: routine lane (monthly, single grouped PR)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    labels:
+      - "dependencies"
+    open-pull-requests-limit: 100
+    commit-message:
+      prefix: "chore"
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  # Python (uv): routine lane (monthly, grouped along three seams).
+  # For a pip repo, swap `package-ecosystem: "uv"` → `"pip"`. For a Go
+  # repo, delete this whole block and uncomment the gomod block below.
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    labels:
+      - "dependencies"
+    open-pull-requests-limit: 100
+    commit-message:
+      prefix: "chore"
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
+    groups:
+      # Charm Tech's own releases (we trust the release).
+      # Prune to whatever this repo actually depends on.
+      charm-tech:
+        patterns:
+          - "ops"
+          - "ops-scenario"
+          - "ops-tracing"
+          - "jubilant"
+          - "pytest-jubilant"
+      # Linters / type-checkers / formatters. Majors ride along; we do not
+      # pin these and a major bump is low-risk to review in a batch.
+      dev-tooling:
+        patterns:
+          - "ruff"
+          - "pyright"
+          - "ty"
+          - "codespell"
+          - "coverage"
+          - "pre-commit"
+          - "types-*"
+      # Test runner + other shared test deps.
+      test-deps:
+        patterns:
+          - "pytest"
+          - "pytest-*"
+      # Everything else, minor + patch only. A runtime MAJOR falls through
+      # to its own ungrouped PR so it never silently rides a patch bundle.
+      runtime:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Go modules: routine lane (monthly, single grouped PR; a runtime
+  # major falls through to its own ungrouped PR). Uncomment for Go repos.
+  # - package-ecosystem: "gomod"
+  #   directory: "/"
+  #   schedule:
+  #     interval: "monthly"
+  #   labels:
+  #     - "dependencies"
+  #   open-pull-requests-limit: 100
+  #   commit-message:
+  #     prefix: "chore"
+  #   cooldown:
+  #     default-days: 7
+  #     semver-major-days: 14
+  #   groups:
+  #     gomod:
+  #       patterns:
+  #         - "*"
+  #       update-types:
+  #         - "minor"
+  #         - "patch"
