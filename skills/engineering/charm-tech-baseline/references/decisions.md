@@ -28,7 +28,7 @@ tag), and rather than special-case one org and leave the others on a
 weaker rationale, the whole allowlist is dropped. Uniform SHA-pinning is
 the policy.
 
-The standard form is `actions/checkout@<40-char-sha> # v4.x.y` — SHA
+The standard form is `actions/checkout@<40-char-sha>. # v4.x.y` — SHA
 first, human-readable tag in a trailing comment so Dependabot can bump
 both together.
 
