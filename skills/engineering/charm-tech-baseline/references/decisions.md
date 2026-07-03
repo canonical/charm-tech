@@ -205,3 +205,32 @@ enumerating every dep.
 
 A repo without `[tool.uv].no-build` is **not** a gap in this cycle. A
 check should not flag it.
+
+## `--locked` in CI — deferred; not required this cycle
+
+Resolved 2026-07-03, immediately after the `no-build` deferral above.
+
+The rollout paired `[tool.uv].exclude-newer = "7 days"` (rolling
+supply-chain quarantine) with `uv run --locked` (lockfile freshness
+enforcement). CI failed daily with:
+
+    error: The lockfile at `uv.lock` needs to be updated,
+           but `--locked` was provided.
+
+`exclude-newer = "7 days"` is a rolling value uv resolves to `now() -
+7 days` at each invocation and records as an absolute timestamp in
+`uv.lock`. Every day the newly-computed floor differs from the one
+stored in the lock, so `--locked` re-resolves, sees a config change,
+and errors — regardless of whether any package actually shifted.
+
+The two settings are fundamentally incompatible. The supply-chain
+protection from rolling `exclude-newer` outweighs the drift-detection
+value of `--locked`, so `--locked` has to go. A future PR-time
+lockfile freshness check (e.g. structural "if `pyproject.toml`
+changed, `uv.lock` must also change") can restore some of the
+protection without the daily false positive; that check is out of
+scope for this cycle.
+
+A repo whose CI workflows don't pass `--locked` (or `--frozen`) to
+`uv run` / `uv sync` is **not** a gap in this cycle. A check should
+not flag it.
