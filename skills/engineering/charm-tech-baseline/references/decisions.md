@@ -178,3 +178,30 @@ particularly if Security makes it an org-level baseline.
 
 A repo without `require_signed_commits` on its default-branch ruleset
 is **not** a gap in this cycle. A check should not flag it.
+
+## `uv.no-build` — deferred; not required this cycle
+
+Resolved 2026-07-03, after the first cross-repo rollout of the uv
+hardening pattern surfaced a fundamental gap in uv itself.
+
+A global `[tool.uv].no-build = true` refuses to build **any** source
+distribution — including the workspace project's own editable install
+during `uv sync` / `uv run`. There is no allow-list or workspace-exempt
+flag in uv today. The only workaround is the deny-list form
+`no-build-package = [<every dependency by name>]`, which is
+unmaintainable at scale and silently regresses the moment a new
+sdist-only dep is added (the whole point of `no-build` was defence
+against exactly that).
+
+The fleet-wide scan (2026-07-02) confirmed 0/571 dependencies across the
+canonical/* uv projects are sdist-only, so `no-build` provides zero
+current benefit. The remaining pattern (`--locked` + `exclude-newer =
+"7 days"`) already gives a week's warning on any new dep before it can
+enter the resolution — the practical supply-chain protection is intact.
+
+Revisit when uv gains an allow-list, a workspace-exempt flag, or a
+per-source override that keeps the workspace project buildable without
+enumerating every dep.
+
+A repo without `[tool.uv].no-build` is **not** a gap in this cycle. A
+check should not flag it.
