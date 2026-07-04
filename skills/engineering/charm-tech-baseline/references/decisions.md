@@ -195,9 +195,10 @@ against exactly that).
 
 The fleet-wide scan (2026-07-02) confirmed 0/571 dependencies across the
 canonical/* uv projects are sdist-only, so `no-build` provides zero
-current benefit. The remaining pattern (`--locked` + `exclude-newer =
-"7 days"`) already gives a week's warning on any new dep before it can
-enter the resolution — the practical supply-chain protection is intact.
+current benefit. The remaining pattern (`exclude-newer = "7 days"`,
+see the `--locked` decision below for why that's the only survivor)
+already gives a week's warning on any new dep before it can enter the
+resolution — the practical supply-chain protection is intact.
 
 Revisit when uv gains an allow-list, a workspace-exempt flag, or a
 per-source override that keeps the workspace project buildable without
