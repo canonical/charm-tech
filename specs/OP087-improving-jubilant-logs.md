@@ -7,7 +7,7 @@
 
 ## Abstract
 
-This document specifies how Jubilant logs can be improved for Charmers. The proposal introduces a model for log handling in Jubilant and downstream users. It also reduces the amount of clutter in `juju.wait()` logs by introducing a new default log mode, a new message format for logging `app` status changes, the ability to redirect verbose logs into a file, and minor changes in `pytest-jubilant` to integrate well with the proposed Jubilant changes.
+This document specifies how Jubilant logs can be improved for Charmers. The proposal introduces a model for log handling in Jubilant and downstream users. It also reduces the amount of clutter in `juju.wait()` logs by introducing a new default log mode, a new message format for logging `app/unit` status changes, the ability to redirect verbose logs into a file, and minor changes in `pytest-jubilant` to integrate well with the proposed Jubilant changes.
 
 ## Rationale
 
