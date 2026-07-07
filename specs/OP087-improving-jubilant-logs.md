@@ -96,7 +96,7 @@ We intend to show `app/unit` status changes to CLI by default, with human readab
 We propose the following format for logging `app/unit` status changes:
 
 ```
-[<name>] <previous_status> (<message>) -> <new_status> (<new_message>)
+[<name>] status changed <previous_status> (<message>) -> <new_status> (<new_message>)
 ```
 
 Where:
@@ -109,7 +109,7 @@ Where:
 In the case where previous status is not available (for example, when an application starts), we only show the new status:
 
 ```
-[<name>] <new_status> (<new_message>)
+[<name>] status <new_status> (<new_message>)
 ```
 
 Let's see an example in action. These application changes are captured from `juju status -format json`. For example, given these status changes as gron diff lines:
@@ -133,9 +133,9 @@ Let's see an example in action. These application changes are captured from `juj
 Then the following messages are logged in `juju.wait()` , using either `logger_wait.info(...)` or `logger_wait.error(...)`:
 
 ```
-[testdb] unknown () -> active (relation created) (1)
-[foo] unknown () -> error (something bad happened) (2)
-[foo] error (something bad happened) -> active () (3)
+[testdb] status changed unknown () -> active (relation created) (1)
+[foo] status changed unknown () -> error (something bad happened) (2)
+[foo] status changed error (something bad happened) -> active () (3)
 ```
 
 (1) is logged at `INFO` level. (2) is logged at `ERROR`. (3) is logged at `INFO`, with an empty message.
