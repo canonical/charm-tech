@@ -40,7 +40,18 @@ scripts/                   # deterministic checks + fixes
   checks/                  # one script per control
   fixes/                   # one script per mechanical remediation
   lib/                     # shared Python helpers (common.py)
+tests/                     # functional tests for the runner + a couple of checks
 ```
+
+## Tests
+
+A small functional suite exercises `detect-tier.py`, the `check.py` runner, and the checks with the most parsing logic. Each test writes a tiny fixture tree and runs the real script as a subprocess — no mocking.
+
+```bash
+uv run --with pytest pytest tests/
+```
+
+Coverage is deliberately shallow: one pass + one fail per exercised check. Add a test file under `tests/checks/` when a new check ships non-trivial parsing.
 
 ## Agent-generic
 
