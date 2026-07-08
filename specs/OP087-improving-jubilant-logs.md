@@ -96,7 +96,7 @@ We intend to show `app/unit` status changes to CLI by default, with human readab
 We propose the following format for logging `app/unit` status changes:
 
 ```
-[<name>] status changed <previous_status> (<message>) -> <new_status> (<new_message>)
+[<name>] status changed: <previous_status> (<message>) -> <new_status> (<new_message>)
 ```
 
 Where:
@@ -106,10 +106,10 @@ Where:
 * `<new_status>` is the status the `app/unit` changed into
 * `<message>` is the optional message from the status change. If this is empty, we show the empty brackets.
 
-In the case where previous status is not available (for example, when an application starts), we only show the new status:
+In the case where the previous status is not available (for example, when an application first starts), we only show the new status:
 
 ```
-[<name>] status <new_status> (<new_message>)
+[<name>] status: <new_status> (<new_message>)
 ```
 
 Let's see an example in action. These application changes are captured from `juju status -format json`. For example, given these status changes as gron diff lines:
@@ -133,9 +133,9 @@ Let's see an example in action. These application changes are captured from `juj
 Then the following messages are logged in `juju.wait()` , using either `logger_wait.info(...)` or `logger_wait.error(...)`:
 
 ```
-[testdb] status changed unknown () -> active (relation created) (1)
-[foo] status changed unknown () -> error (something bad happened) (2)
-[foo] status changed error (something bad happened) -> active () (3)
+[testdb] status changed: unknown () -> active (relation created) (1)
+[foo] status changed: unknown () -> error (something bad happened) (2)
+[foo] status changed: error (something bad happened) -> active () (3)
 ```
 
 (1) is logged at `INFO` level. (2) is logged at `ERROR`. (3) is logged at `INFO`, with an empty message.
@@ -175,9 +175,9 @@ Log format:
 Example:
 
 ```
-ERROR jubilant.wait status changed: myapp active -> error: something bad happened
-INFO jubilant.wait status changed: app2 error -> active: everything okay
-INFO jubilant.wait status changed: app6 error -> active
+ERROR jubilant.wait [myapp] status changed: active () -> error (something bad happened)
+INFO jubilant.wait [app2] status changed: error () -> active (everything okay)
+INFO jubilant.wait [app6] status changed: error () -> active ()
 ```
 
 #### Verbose mode
@@ -203,13 +203,13 @@ Log format:
 Example:
 
 ```shell
-2024-06-29T03:24:20Z ERROR jubilant.wait status changed: myapp active -> error: something bad happened
+2024-06-29T03:24:20Z ERROR jubilant.wait [myapp] status changed: active () -> error (something bad happened)
 2024-06-29T03:24:21Z DEBUG jubilant.wait.verbose status changed diff:
 - <...>
 - <...>
 + <...>
 + <...>
-2024-06-29T03:24:22Z INFO jubilant.wait status changed: app2 error -> active: everything okay
+2024-06-29T03:24:22Z INFO jubilant.wait [myapp] status changed: error () -> active (everything okay)
 2024-06-29T03:24:21Z DEBUG jubilant.wait.verbose status changed diff:
 - <...>
 - <...>
@@ -238,7 +238,7 @@ Where:
 Example
 
 ```shell
-2024-06-29T03:24:20Z ERROR jubilant.wait status changed: myapp active -> error: something bad happened
+2024-06-29T03:24:20Z ERROR jubilant.wait [myapp] status changed: active () -> error (something bad happened)
 ```
 
 #### Log to a file
