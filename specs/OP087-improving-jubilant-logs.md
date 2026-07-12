@@ -346,27 +346,7 @@ pytest-jubilant:_main.py:263 Logging last 1000 lines of `juju debug-log` for mod
 ...
 ```
 
-
-We would like to keep this behavior. At the same time, we want to modify its logic slightly, with our design goals in mind:
-
-* Follow the same logging model of Jubilant: define logger objects in `pytest-jubilant` and let `pytest` handle the log records
-* Maintain `Brief` mode in CLI by putting `Captured log teardown` contents into a file
-
-We propose adding a logger in `pytest-jubilant`, and log to it with `DEBUG` level, instead of printing out to stderr ([original implementation](https://github.com/canonical/pytest-jubilant/blob/66c7cb8afaaa18f9b2dfbd1853bd130f19dc9099/pytest_jubilant/_main.py#L256-L262)):
-
-```py
-+ logger = logging.getLogger("pytest-jubilant")
-
-...
-- print(f"{msg}\n{last_n_lines}\n{end_msg}", file=sys.stderr, flush=True)
-+ logger.debug("%s\n%s\n%s", msg, last_n_lines, end_msg)
-```
-
-Log messages to this `pytest-jubilant` logger be handled depending on how you configure pytest:
-
-* For [Brief mode](#brief-mode-(the-default)) and [Error mode](#error-mode): They don't appear anywhere.
-* For [Verbose mode](#verbose-mode): They appear in the terminal.
-* For [Log to a file](#log-to-a-file): They only land in `logs/verbose.log` , and don't appear in the terminal.
+We decided to remove this behavior. We verified that it doesn’t bring much benefit, and confirmed with some Charmers about this change. At the same time, this can clean up the terminal logs.
 
 #### pytest-jubilant -juju-dump-logs files
 
