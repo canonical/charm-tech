@@ -346,9 +346,9 @@ pytest-jubilant:_main.py:263 Logging last 1000 lines of `juju debug-log` for mod
 ...
 ```
 
-We decided to remove this behavior. We verified that it doesn’t bring much benefit, and confirmed with some Charmers about this change. At the same time, this can clean up the terminal logs.
+We decided to remove this behavior in `pytest-jubilant` v2.2.0. We verified that it doesn’t bring much benefit, and confirmed with some Charmers about this change. At the same time, this can clean up the terminal logs.
 
-#### pytest-jubilant -juju-dump-logs files
+#### pytest-jubilant --juju-dump-logs files
 
 If users set `--juju-dump-logs=<directory>`,  `pytest-jubilant` dumps the `juju debug-log` for all models managed by `JujuFactory` ([source](https://github.com/canonical/pytest-jubilant/blob/66c7cb8afaaa18f9b2dfbd1853bd130f19dc9099/pytest_jubilant/_main.py#L252)) to that directory when the test session finishes.
 
