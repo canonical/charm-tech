@@ -150,4 +150,54 @@ services:
         start-at: "mon,09:00~11:00"
 ```
 
+## Alternative configuration
+
+- `start-at`
+- `schedule`
+- `start-schedule`
+- extend `startup` with timer string
+
+## Full service layer specification
+
+```yaml
+# (Optional) A list of services managed by this configuration layer
+services:
+    <service name>:
+        override: merge | replace
+        command: <commmand>
+        summary: <summary>
+        description: |
+            <description>
+        startup: enabled | disabled
+
+        # start-at
+        start-at: <timer-string>
+        # alternative
+        startup: enabled | disabled | <timer-string>
+        # future possible extension
+        stop-at: <timer-string>
+
+        after:
+            - <other service name>
+        before:
+            - <other service name>
+        requires:
+            - <other service name>
+        environment:
+            <env var name>: <env var value>
+        user: <username>
+        user-id: <uid>
+        group: <group name>
+        group-id: <gid>
+        working-dir: <directory>
+        on-success: restart | shutdown | failure-shutdown | ignore
+        on-failure: restart | shutdown | success-shutdown | ignore
+        on-check-failure:
+            <check name>: restart | shutdown | success-shutdown | ignore
+        backoff-delay: <duration>
+        backoff-factor: <factor>
+        backoff-limit: <duration>
+        kill-delay: <duration>
+```
+
 <!-- mdtog end -->
