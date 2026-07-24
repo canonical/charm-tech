@@ -1,0 +1,86 @@
+# Reusable workflow: generate SBOMs and run secscan via canonical/sbomber.
+# Tier: product. Called from the Publish workflow (see trusted-publishing-
+# product.yml.template) after the release is built.
+#
+# Matrix: one row per artefact type (sdist, wheel). Each row reads a
+# corresponding .sbomber-manifest-<type>.yaml at the repo root, prepared
+# from sbomber-manifest-{sdist,wheel}.yaml.template.
+#
+# Runs on Canonical self-hosted runners because sbomber submits to an
+# internal service (sbom-request.canonical.com) not reachable from public
+# GitHub-hosted runners.
+#
+# Before committing: modernise every SHA-pinned action below. For each `uses:`
+# line, look up the latest release on GitHub, replace the SHA with the current
+# commit SHA of that release, and update the trailing `# vX.Y.Z` version
+# comment. The pins in this template are a snapshot and drift over time. The
+# result must pass zizmor with no findings.
+
+name: SBOM and secscan
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  scan:
+    strategy:
+      fail-fast: false
+      matrix:
+        manifest: [sdist, wheel]
+    name: SBOM generation
+    runs-on: [self-hosted, self-hosted-linux-amd64-jammy-private-endpoint-medium]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6
+        with:
+          persist-credentials: false
+
+      - name: Install apt build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libapt-pkg-dev python3-apt
+
+      - name: Checkout sbomber
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6
+        with:
+          repository: canonical/sbomber
+          path: scanner
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39  # v8.2.0
+        with:
+          enable-cache: false
+
+      - name: Install secscan client
+        run: |
+          sudo snap install canonical-secscan-client
+          sudo snap connect canonical-secscan-client:home system:home
+
+      - name: Prepare artefacts
+        run: |
+          cd scanner
+          ./sbomber prepare ../.sbomber-manifest-${{ matrix.manifest }}.yaml
+
+      - name: Submit artefacts
+        run: |
+          cd scanner
+          ./sbomber submit
+
+      - name: Wait for scans
+        run: |
+          cd scanner
+          ./sbomber poll --wait --timeout 30
+
+      - name: Download reports
+        run: cd scanner && ./sbomber download
+
+      - name: Upload reports
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7
+        with:
+          name: secscan-report-upload-${{ matrix.manifest }}
+          path: ./scanner/reports/
+          if-no-files-found: error

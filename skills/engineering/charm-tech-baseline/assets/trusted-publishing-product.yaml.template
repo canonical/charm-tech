@@ -1,0 +1,71 @@
+# Canonical shape for a Trusted-Publishing-based PyPI release workflow.
+# Tier: product (SBOM handled by canonical/sbomber via a reusable secscan job).
+# For tier=personal|canonical, use trusted-publishing.yaml.template instead.
+#
+# Fill in before use:
+#   - REPLACE_WITH_PROJECT_NAME (PyPI project slug, appears in environment.url)
+#   - Tag pattern under `on.push.tags`
+#
+# Before committing: modernise every SHA-pinned action below. For each `uses:`
+# line, look up the latest release on GitHub, replace the SHA with the current
+# commit SHA of that release, and update the trailing `# vX.Y.Z` version
+# comment. The pins in this template are a snapshot and drift over time. The
+# result must pass zizmor with no findings.
+#
+# This template pairs with:
+#   - .github/workflows/sbom-secscan.yaml (from sbom-secscan.yaml.template)
+#   - .sbomber-manifest-sdist.yaml         (from sbomber-manifest-sdist.yaml.template)
+#   - .sbomber-manifest-wheel.yaml         (from sbomber-manifest-wheel.yaml.template)
+#
+# Anti-patterns this template avoids (and zizmor enforces):
+#   - No password:/username: on pypa/gh-action-pypi-publish (Trusted Publishing).
+#   - No twine upload step.
+#   - Every third-party action is SHA-pinned with a version comment.
+#   - id-token: write + attestations: write scoped to the publish job only.
+#   - persist-credentials: false on every checkout.
+#   - enable-cache: false on setup-uv.
+
+name: Publish
+
+on:
+  push:
+    tags: ['v*']
+
+permissions: {}
+
+jobs:
+  publish:
+    name: Build and publish to PyPI (Trusted Publishing)
+    runs-on: ubuntu-latest
+    environment:
+      name: publish-pypi
+      url: https://pypi.org/p/REPLACE_WITH_PROJECT_NAME
+    permissions:
+      id-token: write      # OIDC to PyPI + sigstore for attestations.
+      attestations: write  # Write build-provenance predicate.
+      contents: read
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39  # v8.2.0
+        with:
+          enable-cache: false
+
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: Attest build provenance (SLSA)
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373  # v4.1.1
+        with:
+          subject-path: 'dist/*'
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # release/v1
+
+  secscan:
+    # SBOM + Canonical secscan (product-tier requirement).
+    # The reusable workflow generates SBOMs via canonical/sbomber for each
+    # artefact type in .sbomber-manifest-*.yaml.
+    uses: ./.github/workflows/sbom-secscan.yaml

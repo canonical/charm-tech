@@ -1,0 +1,24 @@
+# sbomber manifest — sdist artefacts. Committed as .sbomber-manifest-sdist.yaml
+# at the repo root. Consumed by sbom-secscan.yaml.
+#
+# Fill in before use:
+#   - clients.sbom.email — owner-of-record; a real @canonical.com address.
+#   - artifacts[] — one entry per sdist the release produces.
+#     `name` matches the sdist tarball's project name (as it appears in dist/).
+
+clients:
+  sbom:
+    service_url: https://sbom-request.canonical.com
+    department: charm_engineering
+    email: REPLACE_WITH_OWNER_EMAIL@canonical.com
+    team: charm_tech
+  secscan: {}
+
+artifacts:
+  - name: 'REPLACE_WITH_PROJECT_NAME'
+    type: 'sdist'
+    compression: 'gz'
+    ssdlc_params:
+      name: 'REPLACE_WITH_PROJECT_NAME'
+      version: ''
+      channel: 'stable'
