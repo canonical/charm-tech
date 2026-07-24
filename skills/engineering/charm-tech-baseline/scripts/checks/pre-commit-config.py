@@ -13,7 +13,13 @@ trailing-whitespace, check-yaml, check-added-large-files, …) are
 generic file-hygiene checks with no Python-tool counterpart in
 pyproject.toml dependency-groups. Pinning their rev: is the standard
 way to use them and does not duplicate any other source of truth, so
-they are exempted from the count.
+they are exempted from the *tool-version* count.
+
+The carve-out still has to be **SHA-pinned**, not tag-pinned — same
+discipline as gha-sha-pinning (see references/decisions.md § "Remote
+pre-commit hooks — SHA-pin, don't tag-pin"). A `rev: v5.0.0` on an
+exempt repo is a gap; a `rev: <40-char hex>  # frozen: v5.0.0` is
+the shape.
 """
 from __future__ import annotations
 
@@ -33,23 +39,41 @@ APPLIES = "product,canonical,personal"
 EXEMPT_REPOS = {"https://github.com/pre-commit/pre-commit-hooks"}
 
 REPO_RE = re.compile(r"^[ \t]*-[ \t]*repo:[ \t]*(.*)$")
-REV_RE = re.compile(r"""^[ \t]*rev:[ \t]+["']?[a-zA-Z0-9._-]+["']?[ \t]*$""")
+REV_LINE_RE = re.compile(r"^[ \t]*rev:[ \t]+(.*)$")
+SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 
 
-def count_versioned_revs(text: str) -> int:
-    count = 0
+def scan_revs(text: str) -> tuple[int, int]:
+    """Return (tool_revs, tag_pinned_exempt_revs).
+
+    tool_revs counts rev: entries on non-exempt repos (duplicating the
+    dependency-group source of truth).
+
+    tag_pinned_exempt_revs counts rev: entries on the exempt carve-out
+    that aren't full 40-char SHAs — the carve-out still has to be
+    SHA-pinned, same discipline as gha-sha-pinning.
+    """
+    tool_revs = 0
+    tag_pinned = 0
     cur = ""
     for line in text.splitlines():
         m = REPO_RE.match(line)
         if m:
-            val = m.group(1).strip()
-            val = val.replace('"', "").replace("'", "").rstrip()
-            cur = val
+            cur = m.group(1).strip().replace('"', "").replace("'", "").rstrip()
             continue
-        if REV_RE.match(line):
-            if cur not in EXEMPT_REPOS:
-                count += 1
-    return count
+        rm = REV_LINE_RE.match(line)
+        if not rm:
+            continue
+        val = rm.group(1)
+        # Strip trailing comment (e.g. `# frozen: v5.0.0`) before matching.
+        val = re.sub(r"[ \t]*#.*$", "", val)
+        val = val.replace('"', "").replace("'", "").strip()
+        if cur in EXEMPT_REPOS:
+            if not SHA_RE.match(val):
+                tag_pinned += 1
+        else:
+            tool_revs += 1
+    return tool_revs, tag_pinned
 
 
 def main() -> int:
@@ -77,7 +101,7 @@ def main() -> int:
         text = Path(config).read_text(errors="replace")
     except OSError:
         text = ""
-    versioned_revs = count_versioned_revs(text)
+    versioned_revs, tag_pinned_revs = scan_revs(text)
 
     if versioned_revs > 0:
         emit_check(
@@ -88,9 +112,18 @@ def main() -> int:
         )
         return EXIT_FAIL
 
+    if tag_pinned_revs > 0:
+        emit_check(
+            CHECK_ID, "fail",
+            f"Pre-commit config has {tag_pinned_revs} rev: entry(s) pinned by tag rather than full SHA. Cycle convention (see decisions.md § Remote pre-commit hooks): SHA-pin, don't tag-pin — same discipline as gha-sha-pinning.",
+            {"config": config, "tag_pinned_revs": tag_pinned_revs},
+            {"kind": "judgement", "human_review": "Resolve each tag-pinned rev: to its 40-char commit SHA and add a `# frozen: <tag>` trailing comment. Dependabot pre-commit ecosystem will bump the SHA."},
+        )
+        return EXIT_FAIL
+
     emit_check(
         CHECK_ID, "pass",
-        "Pre-commit config present and tool versions not duplicated in rev: fields.",
+        "Pre-commit config present, no tool versions duplicated in rev: fields, and any surviving rev: is SHA-pinned.",
         {"config": config},
     )
     return EXIT_PASS
