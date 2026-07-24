@@ -1,6 +1,6 @@
 # Charm Tech PSIRT Engagement Playbook
 
-Operational guide for the person on-point when PSIRT contacts Charm Tech or when a vulnerability surfaces from one of our repos. For policy rationale see [SEC0026](https://library.canonical.com/corporate-policies/information-security-policies/ssdlc/ssdlc---vulnerability-response), [SEC0037](https://library.canonical.com/corporate-policies/information-security-policies/ssdlc/ssdlc---psirt/ssdlc---psirt-coordination-team%27s-vulnerability-response-guidelines), and [SEC0061](https://library.canonical.com/corporate-policies/information-security-policies/ssdlc/ssdlc---additional-documents/ssdlc---vulnerability-response-standard); for the Canonical disclosure timeline see the [Ubuntu Security disclosure and embargo policy](https://ubuntu.com/security/disclosure-policy).
+Operational guide for the person on-point when the Product Security Incident Response Team (PSIRT) contacts Charm Tech or when a vulnerability surfaces from one of our repos. For policy rationale see [SEC0026](https://library.canonical.com/corporate-policies/information-security-policies/ssdlc/ssdlc---vulnerability-response), [SEC0037](https://library.canonical.com/corporate-policies/information-security-policies/ssdlc/ssdlc---psirt/ssdlc---psirt-coordination-team%27s-vulnerability-response-guidelines), and [SEC0061](https://library.canonical.com/corporate-policies/information-security-policies/ssdlc/ssdlc---additional-documents/ssdlc---vulnerability-response-standard); for the Canonical disclosure timeline see the [Ubuntu Security disclosure and embargo policy](https://ubuntu.com/security/disclosure-policy).
 
 ## Engagement entry points
 
@@ -9,7 +9,6 @@ Reports reach us three ways:
 | Channel | Typical source |
 |---|---|
 | `security@ubuntu.com` | PSIRT-coordinated disclosures; reporters following our SECURITY.md |
-| Launchpad private security bug | PSIRT-initiated or reporter-initiated; private by default |
 | GitHub Security Advisory | Reporter uses the **Report a vulnerability** button in a repo's Security tab |
 
 Every repo's advisory form is at `https://github.com/canonical/<repo>/security/advisories/new`, and every repo's `SECURITY.md` points reporters there and to `security@ubuntu.com`.
@@ -19,7 +18,7 @@ Every repo's advisory form is at `https://github.com/canonical/<repo>/security/a
 When a report arrives:
 
 1. Acknowledge to the reporter within **3 working days** (per the commitment in each repo's `SECURITY.md`).
-2. Score the issue (CVSS 3.1/4.0, or Ubuntu Priority) and check the CISA KEV list.
+2. Score the issue with [CVSS 4.0](https://www.first.org/cvss/v4.0/) and check the [CISA Known Exploited Vulnerabilities catalog](https://www.cisa.gov/known-exploited-vulnerabilities-catalog).
 3. If it's High/Critical (CVSS ≥ 7.0) or KEV-listed, notify the embargo subteam and engage PSIRT at `security@ubuntu.com` — the embargo rules below apply.
 4. Anything lower, with no active exploit, is a standard fix and release: no embargo, but PSIRT still gets the 24-hour notice.
 
@@ -28,16 +27,17 @@ When a report arrives:
 Hard rules for embargoed issues:
 
 - **Need-to-know only.** Embargo details (the vulnerability, the fix, the timeline) are shared only with the embargo subteam and PSIRT. Do not share with the broader team, upstream maintainers, or vendor partners without PSIRT's approval.
-- **90-day cap.** An embargo must not extend beyond 90 days from the initial report without GRC/OCISO approval (`security@canonical.com`) — ask before the deadline, not after.
+- **90-day cap.** An embargo must not extend beyond 90 days from the initial report without Governance, Risk and Compliance (GRC) team approval (`security@canonical.com`) — ask before the deadline, not after.
 - **7-day floor.** When PSIRT is coordinating, don't set an embargo shorter than 7 days without PSIRT's approval, even if the fix is ready sooner.
-- **No silent patching.** Don't commit a fix to a public branch or ship it without a public advisory unless GRC has approved a silent patch (RAF). A quiet commit to `main` counts.
-- **Accidental disclosure.** If embargoed information leaks (a premature public commit, a message outside the embargo group, a public advisory filed before the fix ships), notify PSIRT and GRC **immediately** (`security@ubuntu.com`, `security@canonical.com`) and the other embargo parties (reporter, upstream) within **4 hours** of discovery. Make the leaked material unavailable, then follow the [Vulnerability Embargo Policy](https://library.canonical.com/corporate-policies/information-security-policies/ssdlc/ssdlc---embargo-policy) for the investigation and retrospective.
+- **No silent patching.** Don't commit a fix to a public branch or ship it without a public advisory unless GRC has approved a silent patch. A quiet commit to `main` counts.
+- **Accidental disclosure.** If embargoed information leaks (a premature public commit, a message outside the embargo group, a public advisory filed before the fix ships), notify PSIRT and GRC **immediately** (email `security@canonical.com` and CC `security@ubuntu.com`) and the other embargo parties (reporter, upstream) within **4 hours** of discovery. Make the leaked material unavailable, then follow the [Vulnerability Embargo Policy](https://library.canonical.com/corporate-policies/information-security-policies/ssdlc/ssdlc---embargo-policy) for the investigation and retrospective.
 
 **During an embargo:**
 
-- Coordinate via the Launchpad private bug, the GitHub private advisory, or email; Mattermost only in DMs or a private channel limited to the embargo group. Never a public issue, PR, or public channel.
+- Coordinate via the GitHub private advisory or email; Mattermost only in DMs or a private channel limited to the embargo group. Never a public issue, PR, or public channel.
 - All content is **Strictly Confidential** until the advisory is public; after disclosure, classify materials per the [Vulnerability Response Standard](https://library.canonical.com/corporate-policies/information-security-policies/ssdlc/ssdlc---additional-documents/ssdlc---vulnerability-response-standard) (retrospectives and draft comms stay Internal).
 - Develop the fix on a private fork branch ([GitHub's temporary private fork](https://docs.github.com/en/code-security/tutorials/fix-reported-vulnerabilities/collaborate-in-a-fork)); do not open a public PR or push to `main` until the advisory is ready to go.
+- **Publish at disclosure, not before.** The release to public channels (PyPI, Charmhub, snap store, GitHub release) goes out in the same window as the GitHub advisory. Nothing hits the public channel until the embargo lifts; at that moment, the fixed version and the advisory explaining it become public together.
 - Track the 90-day clock from the first report. Alert PSIRT if the fix is at risk of missing the window.
 
 ## The standing Charm Tech embargo subteam
