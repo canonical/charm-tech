@@ -34,6 +34,11 @@ APPLIES = "product,canonical,personal"
 MIN_COOLDOWN_DAYS = 7
 
 ECOSYSTEM_LINE_RE = re.compile(r"^[ \t]*-[ \t]+package-ecosystem:", re.MULTILINE)
+PRECOMMIT_ECO_RE = re.compile(
+    r"""^[ \t]*-[ \t]+package-ecosystem:[ \t]*["']?pre-commit["']?[ \t]*$""",
+    re.MULTILINE,
+)
+PRECOMMIT_REV_RE = re.compile(r"^[ \t]*rev:[ \t]+", re.MULTILINE)
 
 
 def main() -> int:
@@ -77,6 +82,28 @@ def main() -> int:
             {"kind": "judgement", "human_review": "Add package-ecosystem blocks for each language/runtime the repo uses (pip/uv, gomod, github-actions, docker)."},
         )
         return EXIT_FAIL
+
+    # Cross-check: if .pre-commit-config.yaml carries any rev: entries,
+    # dependabot must declare the pre-commit ecosystem to bump the SHAs.
+    # See references/decisions.md § "Remote pre-commit hooks — SHA-pin".
+    pc_config = ""
+    for path in (".pre-commit-config.yaml", ".pre-commit-config.yml"):
+        if Path(path).is_file():
+            pc_config = path
+            break
+    if pc_config:
+        try:
+            pc_text = Path(pc_config).read_text(errors="replace")
+        except OSError:
+            pc_text = ""
+        if PRECOMMIT_REV_RE.search(pc_text) and not PRECOMMIT_ECO_RE.search(text):
+            emit_check(
+                CHECK_ID, "fail",
+                f"{found_path} is missing a pre-commit package-ecosystem entry — required because {pc_config} carries rev: entries whose SHAs need Dependabot bumps (Charm Tech baseline).",
+                {"path": found_path, "ecosystems": ecos, "pre_commit_config": pc_config},
+                {"kind": "judgement", "human_review": "Add a pre-commit package-ecosystem block to dependabot.yaml (same shape as github-actions, cooldown ≥7 days). See assets/dependabot.yaml.template."},
+            )
+            return EXIT_FAIL
 
     # Parse and validate cooldown.
     try:
