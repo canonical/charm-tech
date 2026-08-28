@@ -55,6 +55,7 @@ the tooling keys on, so nesting depth does not matter.
 | `ct-security-review` | General OWASP-style code security review with per-language and infrastructure guides, confidence gating, and exploitability verification. |
 | `gha-security-review` | GitHub Actions security review — pwn requests, expression injection, credential theft, supply-chain attacks, with concrete PoCs. |
 | `iterate-pr` | Drive a PR to green: fix CI failures, address review feedback, push, and wait, on a loop. |
+| `charm-tech-baseline` | Audit a repo against the Charm Tech baseline — SSDLC, supply-chain hygiene, best-of-class extras — and explain or fix the gaps. |
 
 ### `meta/` — skills and agent docs
 
