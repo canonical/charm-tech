@@ -14,8 +14,9 @@
 
 The library's public surface is a flat set of module-level functions (`ensure`, `install`, `refresh`, `remove`, `info`, `hold`, `start`, `stop`, `get`, `set`, `connect`, `alias`, `logs`, and so on) that all funnel through a small client module speaking JSON over `/run/snapd.socket`.
 
-The obviously workaround is to monkeypatch the library's public functions, per test:
+The obvious workaround is to monkeypatch the library's public functions, per test:
 
+```python
 def test_install(monkeypatch):
     monkeypatch.setattr(snap, 'ensure', lambda *a, **kw: True)
     ctx.run(ctx.on.install(), ops.testing.State())
@@ -23,7 +24,7 @@ def test_install(monkeypatch):
 
 There are three problems with this. It asserts nothing about whether the charm's call was well formed - a charm that calls `snap.install('foo', channel='2/stable', revision=7)`, which is a `ValueError` in the real library, passes this test and fails in production. It carries no state, so a charm that reads back what it installed cannot be tested for correctness. And it is written again from scratch in every charm, differently and probably less completely each time.
 
-In theory, code paths they most valuable to test are the ones an ad-hoc stub cannot express at all: snapd unreachable, a snap missing from the store, a `post-refresh` hook failing mid-change.
+In practice, the code paths most valuable to test are the ones an ad-hoc stub cannot express at all: snapd unreachable, a snap missing from the store, a `post-refresh` hook failing mid-change.
 
 ## Specification
 
@@ -37,6 +38,7 @@ This is not a new seam: the library's own unit tests already patch those same fo
 
 A pytest fixture ships with the package, so a test that doesn't care about the starting state needs no setup at all:
 
+```python
 def test_install_handler(snapd):
     ctx = ops.testing.Context(PrometheusCharm)
     state_out = ctx.run(ctx.on.install(), ops.testing.State())
@@ -48,6 +50,7 @@ def test_install_handler(snapd):
 
 A test that starts from an already-installed snap describes it, in the same frozen `Snap` type that comes back out, so input and output are symmetric:
 
+```python
 def test_config_changed_refreshes_channel():
     snapd = snap_testing.Snapd([
         snap_testing.Snap('prometheus', channel='2/stable', revision=100,
@@ -70,6 +73,7 @@ def test_config_changed_refreshes_channel():
 
 Some charm behaviour is about ordering, and is invisible in the final state. The double records every operation the charm performed, as the charm asked for it, before the double resolved it:
 
+```python
 def test_refresh_stops_service_first():
     snapd = snap_testing.Snapd([
         snap_testing.Snap('prometheus', channel='2/stable', services={'prometheus': 'active'}),
@@ -92,6 +96,7 @@ def test_refresh_stops_service_first():
 
 By default any snap installs and any refresh finds an update. A test that cares about the store describes one, and then the catalogue is the world: a snap that isn't in it raises `NotFoundError`, a channel that isn't on it raises `ChannelNotAvailableError`, and a snap marked classic that the charm installs without `classic=True` raises `NeedsClassicError`. There is no mode flag - the presence of the argument is the mode.
 
+```python
 def test_unknown_snap_blocks():
     snapd = snap_testing.Snapd(store=[snap_testing.StoreSnap('grafana')])
     ctx = ops.testing.Context(PrometheusCharm)
@@ -106,6 +111,7 @@ def test_unknown_snap_blocks():
 
 Failures the store model cannot express are described directly, optionally scoped to one snap and to a number of occurrences, so that a charm's retry can be exercised. `'*'` fails every operation, which is what snapd being unreachable looks like to a charm:
 
+```python
 def test_snapd_unavailable_defers():
     snapd = snap_testing.Snapd(
         failures=[snap_testing.Failure('*', error=snap.ConnectionError(
@@ -120,6 +126,7 @@ def test_snapd_unavailable_defers():
     assert len(state_out.deferred) == 1
 ```
 
+```python
 def test_post_refresh_hook_failure_is_retried():
     snapd = snap_testing.Snapd(
         [snap_testing.Snap('prometheus', channel='2/stable')],
@@ -154,6 +161,7 @@ Inputs are validated on construction, in the spirit of Scenario's consistency ch
 
 Nothing here depends on ops, so charm logic that has been factored out of event handlers is testable directly, for example in unit tests for the workload module:
 
+```python
 def test_workload_manager(snapd):
     workload.reconcile(channel='2/edge')
     assert snapd.installed['prometheus'].channel == '2/edge'
