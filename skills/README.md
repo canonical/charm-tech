@@ -51,7 +51,7 @@ the tooling keys on, so nesting depth does not matter.
 | :-- | :-- |
 | `ct-code-review` | Canonical code-review guidelines — tone, procedure, changeset scope, review process. |
 | `go-standards` | Canonical Go coding standards (formatting, naming, errors, structs, interfaces, testing). For pebble and concierge. |
-| `cli-standards` | Canonical CLI design standards — grammar, flags, feedback, tables, verbosity, tone. For charmcraft/pebble/jubilant CLIs. |
+| `cli-standards` | Canonical CLI design standards — grammar, flags, feedback, tables, verbosity, help output, deprecation, tone. For charmcraft/pebble/jubilant CLIs. |
 | `ct-security-review` | General OWASP-style code security review with per-language and infrastructure guides, confidence gating, and exploitability verification. |
 | `gha-security-review` | GitHub Actions security review — pwn requests, expression injection, credential theft, supply-chain attacks, with concrete PoCs. |
 | `iterate-pr` | Drive a PR to green: fix CI failures, address review feedback, push, and wait, on a loop. |

@@ -1,6 +1,6 @@
 ---
 name: cli-standards
-description: Canonical CLI design standards. Use when designing, implementing, or reviewing command-line interfaces. Covers grammar, commands, flags, parameters, feedback, colours, tables, verbosity, and tone of voice.
+description: Canonical CLI design standards. Use when designing, implementing, or reviewing command-line interfaces. Covers grammar, commands, flags, parameters, feedback, colours, tables, verbosity, help output, deprecation, and tone of voice.
 license: CC-BY-4.0
 compatibility: universal
 allowed-tools: Read Grep Glob
@@ -13,31 +13,38 @@ metadata:
 These standards define how Canonical CLI tools should look and behave. They originate from discussions with Canonical's senior tech leads and define best practice. All points must be strongly considered before contributing CLI code at Canonical.
 
 For full do/don't examples of every rule, see [examples.md](references/examples.md).
+For help output, see [help.md](references/help.md).
+
+The upstream source is Canonical's [CLI standard][std]; each rule heading below links to
+the corresponding clause there. When this skill and the upstream standard disagree, the
+upstream standard wins — raise a PR here to fix the drift.
+
+[std]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md
 
 ---
 
 ## Grammar + Vocabulary
 
-### Commands are verbs
+### Commands are verbs ([standard][commands-are-verbs])
 Every command that acts on a primary object must be a verb (for example: `install`, `refresh`, `login`). Choose verbs that imply the object type they act on.
 
-### Commands are logically grouped
+### Commands are logically grouped ([standard][commands-are-logically-grouped])
 Group commands that act on the same object type or domain (for example: build lifecycle vs. store management).
 
-### Verb-noun form
+### Verb-noun form ([standard][verb-noun-form])
 When verbs alone are insufficient to distinguish objects, use `verb-noun` form:
 ```
 snap set-quota
 ```
 
-### Listing secondary objects
+### Listing secondary objects ([standard][shorthand-for-listing])
 Use the plural noun as shorthand instead of `list-foobar`:
 ```
 snap services        # not: snap list-services
 snap list            # for listing primary objects (snaps)
 ```
 
-### Showing state
+### Showing state ([standard][showing-state-shorthand])
 - Use `status` over `show-status`
 - Use `foobar-status` over `show-foobar-status`
 - Use `foobar` over `show-foobar`
@@ -60,7 +67,27 @@ snap list            # for listing primary objects (snaps)
 | `tool help` | Show help |
 | `tool version` | Show release version |
 
-### Sublevels
+### Accepted verbs beyond the table
+
+These verbs are also in full compliance with the standard, and are preferred over
+inventing a synonym:
+
+`add`/`remove`, `submit`, `request`, `revoke`, `init`, `enable`/`disable`, `save`,
+`refresh`, `switch`, `restore`, `forget`, `report`, `set`/`unset`, `try`, `download`,
+`clean`, `pull`, `build`, `stage`, `prime`, `pack`, `test`, `abort`, `validate`, `watch`,
+`prune`.
+
+A verb outside this list and the table above is only a problem when either:
+
+1. a listed verb is close in meaning and the chosen verb is not clearly better, or
+2. the chosen verb is ambiguous, hard to understand, or not standard English.
+
+If no listed verb is close *and* the verb reads clearly, it is fine — do not flag it.
+
+Within one command family acting on the same object, verbs must be symmetrical:
+`add`/`remove` or `create`/`delete`, never `add`/`delete`.
+
+### Sublevels ([standard][at-most-one-sublevel])
 At most **one** sublevel may be used. Alternatively, split into separate tools with associated names:
 ```
 cmd cluster config --secret "$(cat secret.txt)"
@@ -72,13 +99,13 @@ cmd-cluster config --secret "$(cat secret.txt)"
 
 ## Parameters, Flags and Options
 
-### Positional parameters
+### Positional parameters ([standard][minimum-flags])
 Only use when the meaning of each position is natural and easily memorisable:
 ```
 cp sourcefile destfile      # clear directional meaning
 ```
 
-### Flags
+### Flags ([standard][no-dual-flags])
 - **Short flags** (`-R`): only for frequent actions easily implied from context
 - **Long flags** (`--recursive`): more descriptive, for less frequent actions
 - **Do not offer both** short and long for the same action
@@ -88,7 +115,7 @@ cp sourcefile destfile      # clear directional meaning
 ### Commonly used flags
 All tools must support at minimum: `--help`
 
-### Flags with values
+### Flags with values ([standard][flag-value-separation])
 - Must support separation by whitespace: `--verbosity debug`
 - May support separation by `=`: `--rsh="ssh -p 2222"`
 
@@ -125,7 +152,7 @@ multipass exec docker -- snapcraft --help
 
 All messages must be human-readable, short, and succinct.
 
-### Colour usage
+### Colour usage ([standard][color-capability-detection])
 - Use colour for visual hierarchy only — never as the sole mechanism conveying information
 - Only enable colour when the output stream supports it
 - Disable colour when `NO_COLOR` is set or output is redirected
@@ -136,7 +163,7 @@ All messages must be human-readable, short, and succinct.
 
 ## Tabular Data
 
-### Format
+### Format ([standard][table-format])
 - Column delimiter: two spaces
 - Headers: left-aligned, UPPER CASE, bold
 - No ASCII line decorations
@@ -145,7 +172,7 @@ All messages must be human-readable, short, and succinct.
 - Use short column names (for example: `REV` not `REVISION`)
 - Optional `NOTES` column always last
 
-### Empty states
+### Empty states ([standard][empty-state-stderr])
 Show a clear message instead of empty headers:
 ```
 $ snap list
@@ -175,10 +202,37 @@ items: []
 ### Timestamps
 Use ISO 8601: `2024-06-29T03:24:20Z`
 
-### Ephemeral feedback
+### Ephemeral feedback ([standard][ephemeral-tty-only])
 - Use line-overwriting only in interactive tty sessions, never when piped
 - Use ephemeral feedback for intermediate steps where the final outcome is understood (for example: `snap remove`)
 - Use non-ephemeral (new line) for steps with meaningful consequences (for example: machine allocation)
+
+---
+
+## Help Output
+
+All tools must support `tool help`, `tool --help`, `tool -h`, `tool help <command>`, and
+`tool <command> --help`. Top-level help needs usage, a one-sentence summary, global
+options, the command list, and a pointer to per-command help; every flag needs a
+one-line description, plus its accepted values and default where it has them.
+
+For the full normative rules, see [help.md](references/help.md).
+
+---
+
+## Changing a CLI
+
+A CLI's surface is a compatibility promise: command names, flag names, exit codes, and
+the shape of machine-readable output are all interfaces that scripts depend on.
+
+- Deprecate in a minor version: keep the old form working, warn on stderr, and name the
+  replacement.
+- Break in a major version: the old form fails with a message naming the replacement.
+- Remove the messaging the major version after that.
+
+For what counts as a breaking change, and the full deprecation and versioning policy,
+see Canonical's
+[CLI versioning and deprecation guide](https://github.com/canonical/cli-skill/blob/main/cli-skill/references/deprecation.md).
 
 ---
 
@@ -206,3 +260,17 @@ error: cannot establish the connection
 error: connection couldn't be established
 Oops, something went wrong.
 ```
+
+[commands-are-verbs]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-commands-are-verbs
+[commands-are-logically-grouped]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-commands-are-logically-grouped
+[verb-noun-form]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-verb-noun-form
+[shorthand-for-listing]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-shorthand-for-listing
+[showing-state-shorthand]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-showing-state-shorthand
+[at-most-one-sublevel]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-at-most-one-sublevel
+[minimum-flags]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-minimum-flags
+[no-dual-flags]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-no-dual-flags
+[flag-value-separation]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-flag-value-separation
+[color-capability-detection]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-color-capability-detection
+[table-format]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-table-format
+[empty-state-stderr]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-empty-state-stderr
+[ephemeral-tty-only]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-ephemeral-tty-only
