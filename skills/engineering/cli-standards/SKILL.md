@@ -15,36 +15,30 @@ These standards define how Canonical CLI tools should look and behave. They orig
 For full do/don't examples of every rule, see [examples.md](references/examples.md).
 For help output, see [help.md](references/help.md).
 
-The upstream source is Canonical's [CLI standard][std]; each rule heading below links to
-the corresponding clause there. When this skill and the upstream standard disagree, the
-upstream standard wins — raise a PR here to fix the drift.
-
-[std]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md
-
 ---
 
 ## Grammar + Vocabulary
 
-### Commands are verbs ([standard][commands-are-verbs])
+### Commands are verbs
 Every command that acts on a primary object must be a verb (for example: `install`, `refresh`, `login`). Choose verbs that imply the object type they act on.
 
-### Commands are logically grouped ([standard][commands-are-logically-grouped])
+### Commands are logically grouped
 Group commands that act on the same object type or domain (for example: build lifecycle vs. store management).
 
-### Verb-noun form ([standard][verb-noun-form])
+### Verb-noun form
 When verbs alone are insufficient to distinguish objects, use `verb-noun` form:
 ```
 snap set-quota
 ```
 
-### Listing secondary objects ([standard][shorthand-for-listing])
+### Listing secondary objects
 Use the plural noun as shorthand instead of `list-foobar`:
 ```
 snap services        # not: snap list-services
 snap list            # for listing primary objects (snaps)
 ```
 
-### Showing state ([standard][showing-state-shorthand])
+### Showing state
 - Use `status` over `show-status`
 - Use `foobar-status` over `show-foobar-status`
 - Use `foobar` over `show-foobar`
@@ -87,7 +81,7 @@ If no listed verb is close *and* the verb reads clearly, it is fine — do not f
 Within one command family acting on the same object, verbs must be symmetrical:
 `add`/`remove` or `create`/`delete`, never `add`/`delete`.
 
-### Sublevels ([standard][at-most-one-sublevel])
+### Sublevels
 At most **one** sublevel may be used. Alternatively, split into separate tools with associated names:
 ```
 cmd cluster config --secret "$(cat secret.txt)"
@@ -99,13 +93,13 @@ cmd-cluster config --secret "$(cat secret.txt)"
 
 ## Parameters, Flags and Options
 
-### Positional parameters ([standard][minimum-flags])
+### Positional parameters
 Only use when the meaning of each position is natural and easily memorisable:
 ```
 cp sourcefile destfile      # clear directional meaning
 ```
 
-### Flags ([standard][no-dual-flags])
+### Flags
 - **Short flags** (`-R`): only for frequent actions easily implied from context
 - **Long flags** (`--recursive`): more descriptive, for less frequent actions
 - **Do not offer both** short and long for the same action
@@ -115,7 +109,7 @@ cp sourcefile destfile      # clear directional meaning
 ### Commonly used flags
 All tools must support at minimum: `--help`
 
-### Flags with values ([standard][flag-value-separation])
+### Flags with values
 - Must support separation by whitespace: `--verbosity debug`
 - May support separation by `=`: `--rsh="ssh -p 2222"`
 
@@ -152,7 +146,7 @@ multipass exec docker -- snapcraft --help
 
 All messages must be human-readable, short, and succinct.
 
-### Colour usage ([standard][color-capability-detection])
+### Colour usage
 - Use colour for visual hierarchy only — never as the sole mechanism conveying information
 - Only enable colour when the output stream supports it
 - Disable colour when `NO_COLOR` is set or output is redirected
@@ -163,7 +157,7 @@ All messages must be human-readable, short, and succinct.
 
 ## Tabular Data
 
-### Format ([standard][table-format])
+### Format
 - Column delimiter: two spaces
 - Headers: left-aligned, UPPER CASE, bold
 - No ASCII line decorations
@@ -172,7 +166,7 @@ All messages must be human-readable, short, and succinct.
 - Use short column names (for example: `REV` not `REVISION`)
 - Optional `NOTES` column always last
 
-### Empty states ([standard][empty-state-stderr])
+### Empty states
 Show a clear message instead of empty headers:
 ```
 $ snap list
@@ -202,7 +196,7 @@ items: []
 ### Timestamps
 Use ISO 8601: `2024-06-29T03:24:20Z`
 
-### Ephemeral feedback ([standard][ephemeral-tty-only])
+### Ephemeral feedback
 - Use line-overwriting only in interactive tty sessions, never when piped
 - Use ephemeral feedback for intermediate steps where the final outcome is understood (for example: `snap remove`)
 - Use non-ephemeral (new line) for steps with meaningful consequences (for example: machine allocation)
@@ -260,17 +254,3 @@ error: cannot establish the connection
 error: connection couldn't be established
 Oops, something went wrong.
 ```
-
-[commands-are-verbs]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-commands-are-verbs
-[commands-are-logically-grouped]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-commands-are-logically-grouped
-[verb-noun-form]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-verb-noun-form
-[shorthand-for-listing]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-shorthand-for-listing
-[showing-state-shorthand]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-showing-state-shorthand
-[at-most-one-sublevel]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-at-most-one-sublevel
-[minimum-flags]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-minimum-flags
-[no-dual-flags]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-no-dual-flags
-[flag-value-separation]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-flag-value-separation
-[color-capability-detection]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-color-capability-detection
-[table-format]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-table-format
-[empty-state-stderr]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-empty-state-stderr
-[ephemeral-tty-only]: https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-standard.md#rule-ephemeral-tty-only
