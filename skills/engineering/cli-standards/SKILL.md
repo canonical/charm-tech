@@ -1,6 +1,6 @@
 ---
 name: cli-standards
-description: Canonical CLI design standards. Use when designing, implementing, or reviewing command-line interfaces. Covers grammar, commands, flags, parameters, feedback, colours, tables, verbosity, and tone of voice.
+description: Canonical CLI design standards. Use when designing, implementing, or reviewing command-line interfaces. Covers grammar, commands, flags, parameters, feedback, colours, tables, verbosity, help output, deprecation, and tone of voice.
 license: CC-BY-4.0
 compatibility: universal
 allowed-tools: Read Grep Glob
@@ -13,6 +13,7 @@ metadata:
 These standards define how Canonical CLI tools should look and behave. They originate from discussions with Canonical's senior tech leads and define best practice. All points must be strongly considered before contributing CLI code at Canonical.
 
 For full do/don't examples of every rule, see [examples.md](references/examples.md).
+For help output, see [help.md](references/help.md).
 
 ---
 
@@ -59,6 +60,26 @@ snap list            # for listing primary objects (snaps)
 | `tool delete-foo <id>` | Delete secondary object |
 | `tool help` | Show help |
 | `tool version` | Show release version |
+
+### Accepted verbs beyond the table
+
+These verbs are also in full compliance with the standard, and are preferred over
+inventing a synonym:
+
+`add`/`remove`, `submit`, `request`, `revoke`, `init`, `enable`/`disable`, `save`,
+`refresh`, `switch`, `restore`, `forget`, `report`, `set`/`unset`, `try`, `download`,
+`clean`, `pull`, `build`, `stage`, `prime`, `pack`, `test`, `abort`, `validate`, `watch`,
+`prune`.
+
+A verb outside this list and the table above is only a problem when either:
+
+1. a listed verb is close in meaning and the chosen verb is not clearly better, or
+2. the chosen verb is ambiguous, hard to understand, or not standard English.
+
+If no listed verb is close *and* the verb reads clearly, it is fine — do not flag it.
+
+Within one command family acting on the same object, verbs must be symmetrical:
+`add`/`remove` or `create`/`delete`, never `add`/`delete`.
 
 ### Sublevels
 At most **one** sublevel may be used. Alternatively, split into separate tools with associated names:
@@ -179,6 +200,33 @@ Use ISO 8601: `2024-06-29T03:24:20Z`
 - Use line-overwriting only in interactive tty sessions, never when piped
 - Use ephemeral feedback for intermediate steps where the final outcome is understood (for example: `snap remove`)
 - Use non-ephemeral (new line) for steps with meaningful consequences (for example: machine allocation)
+
+---
+
+## Help Output
+
+All tools must support `tool help`, `tool --help`, `tool -h`, `tool help <command>`, and
+`tool <command> --help`. Top-level help needs usage, a one-sentence summary, global
+options, the command list, and a pointer to per-command help; every flag needs a
+one-line description, plus its accepted values and default where it has them.
+
+For the full normative rules, see [help.md](references/help.md).
+
+---
+
+## Changing a CLI
+
+A CLI's surface is a compatibility promise: command names, flag names, exit codes, and
+the shape of machine-readable output are all interfaces that scripts depend on.
+
+- Deprecate in a minor version: keep the old form working, warn on stderr, and name the
+  replacement.
+- Break in a major version: the old form fails with a message naming the replacement.
+- Remove the messaging the major version after that.
+
+For what counts as a breaking change, and the full deprecation and versioning policy,
+see Canonical's
+[CLI versioning and deprecation guide](https://github.com/canonical/cli-skill/blob/main/cli-skill/references/deprecation.md).
 
 ---
 
