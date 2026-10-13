@@ -67,7 +67,7 @@ Only the I/O is replaced.
 
 This isn't a new seam. The library's own unit tests already patched the same four functions, but with canned responses for each test. The double patches in a model that changes as the charm acts.
 
-A `Snapd` is reentrant, as OP093 requires of mocking: a fixture and the test that uses it can each open it, and `Juju` can open `mocked()` inside it (below). It can only be used for one test, though, like `ops.testing.Context`. Entering it again after its outermost scope has exited raises an error, so a test can't accidentally carry state from one run into the next.
+A `Snapd` is reentrant, as OP093 requires of mocking: a fixture and the test that uses it can each open it, and `Juju` can open `mocked()` inside it (below). It can only be used for one test, though. Entering it again after its outermost scope has exited raises an error, so a test can't accidentally carry state from one run into the next.
 
 ### `mocked`
 
