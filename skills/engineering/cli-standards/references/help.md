@@ -2,12 +2,15 @@
 
 Normative rules for help output, condensed from [Canonical's CLI help rules](https://github.com/canonical/cli-skill/blob/main/cli-skill/references/cli-help.md).
 
+These rules follow Canonical's draft guidance on CLI help, which is not yet an approved standard. Where a rule here disagrees with [the main skill](../SKILL.md), follow the main skill.
+
 **MUST** = required. **SHOULD** = strongly recommended; deviations need justification. **CAN** = optional.
 
 ## Entrypoints
 
 - MUST provide help in both command and flag form.
-- MUST accept at minimum: `tool help`, `tool --help`, `tool -h`, `tool help <command>`, `tool <command> --help`.
+- MUST accept at minimum: `tool help`, `tool --help`, `tool help <command>`, `tool <command> --help`.
+- SHOULD also accept `tool -h`, so that a user guessing at the flag still gets help. Help output lists only `--help`, so the tool does not offer both a short and a long flag for the same action.
 - SHOULD support `tool help --all` for a full command overview.
 
 ## Top-level help
@@ -52,7 +55,7 @@ Normative rules for help output, condensed from [Canonical's CLI help rules](htt
 - Alignment and indentation MUST allow fast column scanning of command and option lists; major sections MUST be separated by whitespace.
 - Line widths SHOULD stay readable in a standard terminal; wrapped descriptions SHOULD use hanging indentation.
 - Key actions SHOULD come near the top (usage, primary commands, high-value options).
-- Colour or styling MUST NOT be required to understand the structure — monochrome output MUST remain readable. See the colour rules in the main skill.
+- Colour or styling MUST NOT be required to understand the structure — monochrome output MUST remain readable. See the colour rules in [the main skill](../SKILL.md#colour-usage).
 - Commands in grouped lists SHOULD be visually distinct from their descriptions.
 - Emphasis CAN mark warnings or suggestions, but SHOULD be sparse and consistent.
 

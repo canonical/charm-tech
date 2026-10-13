@@ -200,7 +200,7 @@ Use ISO 8601: `2024-06-29T03:24:20Z`
 
 ## Help Output
 
-All tools must support `tool help`, `tool --help`, `tool -h`, `tool help <command>`, and `tool <command> --help`. Top-level help needs usage, a short summary, global options, the command list, and a pointer to per-command help; every flag needs a one-line description, plus its accepted values and default where it has them.
+All tools must support `tool help`, `tool --help`, `tool help <command>`, and `tool <command> --help`. They should also accept `tool -h`, but list only `--help` in help output. Top-level help needs usage, a short summary, global options, the command list, and a pointer to per-command help; every flag needs a one-line description, plus its accepted values and default where it has them.
 
 For the full normative rules, see [help.md](references/help.md).
 
@@ -208,13 +208,23 @@ For the full normative rules, see [help.md](references/help.md).
 
 ## Changing a CLI
 
-A CLI's surface is a compatibility promise: command names, flag names, exit codes, and the shape of machine-readable output are all interfaces that scripts depend on.
+A CLI's surface is a compatibility promise. Scripts depend on command names, flag names, exit codes, and the shape of machine-readable output.
+
+Adding a command or a flag is not a breaking change. These are breaking changes:
+
+- Removing, renaming, or reorganising a command, or changing what it does.
+- Removing or renaming a flag, or changing the values it accepts or what it does.
+- Changing machine-readable output, error messages, or exit codes. Version machine-readable output to change it without breaking anyone.
+
+Changes to help text, progress reporting, and prompts are less likely to break anyone, but can.
+
+Make a breaking change only when it is worth the cost to users, and then in these steps:
 
 - Deprecate in a minor version: keep the old form working, warn on stderr, and name the replacement (or, for a removal, the version it will be removed in).
 - Break in a major version: the old form fails with a message saying it was removed, naming the replacement if there is one.
 - Remove the messaging in the next major version after that.
 
-For what counts as a breaking change, and the full deprecation and versioning policy, see Canonical's [CLI versioning and deprecation guide](https://github.com/canonical/cli-skill/blob/main/cli-skill/references/deprecation.md).
+Canonical's [CLI versioning and deprecation guide](https://github.com/canonical/cli-skill/blob/main/cli-skill/references/deprecation.md) has more detail for human readers.
 
 ---
 
