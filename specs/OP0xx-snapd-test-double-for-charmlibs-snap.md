@@ -31,7 +31,7 @@ def test_install(monkeypatch):
 That works, but it has three problems:
 
 * It asserts nothing about whether the charm's call was well formed. A charm that calls `snap.ensure_installed('prometheus', '2/stable', 7)` passes this test, but the real library raises `TypeError`, because `revision` is keyword-only. The same goes for a snap name the library rejects with `ValueError`.
-* It has no state, so we can't test a charm that reads back what it installed.
+* It has no state, so a charm that reads back what it installed can't be tested.
 * Every charm writes it again from scratch, differently, and probably less completely each time.
 
 The code paths that are most worth testing are also the ones an ad-hoc stub can't express at all: snapd being unreachable, a snap missing from the store, or a `post-refresh` hook failing part way through a change.
@@ -48,7 +48,7 @@ A `snapd` pytest fixture is registered with a `pytest11` entry point, so install
 
 OP077 has charms depend on `charmlibs-<libname>[testing]`. The branch doesn't add that extra to `charmlibs-snap` yet, so for now a charm depends on `charmlibs-snap-testing` directly. Adding the extra is a one-line change, and belongs in the `charmlibs` PR.
 
-The double reaches into the library's private `_client` module from another distribution, which is a trade-off we've made on purpose (see [Alternatives](#alternatives)). I think `charmlibs.snap` should document the client functions as the supported (still underscored) seam for `charmlibs-snap-testing`.
+The double reaches into the library's private `_client` module from another distribution, which is a deliberate trade-off (see [Alternatives](#alternatives)). `charmlibs.snap` should document the client functions as the supported (still underscored) seam for `charmlibs-snap-testing`.
 
 ### Where the double intercepts
 
@@ -167,7 +167,7 @@ def test_refresh_stops_service_first():
     ]
 ```
 
-`Refresh(channel='2/edge')` here is what the charm passed. There's one operation type for each library entry point that changes or reads snap state: `Install`, `Refresh`, `Remove`, `Hold`, `Unhold`, `Start`, `Stop`, `Restart`, `ConfigGet`, `ConfigSet`, `ConfigUnset`, `Connect`, `Disconnect`, `Alias`, `Unalias`, and `Logs`. We don't record `list_one`, because `ensure_installed` calls it on every run, and it would be noise in every assertion. Only operations that succeeded are recorded. A failure that the test injected shows up in the charm's behaviour, not in `history`.
+`Refresh(channel='2/edge')` here is what the charm passed. There's one operation type for each library entry point that changes or reads snap state: `Install`, `Refresh`, `Remove`, `Hold`, `Unhold`, `Start`, `Stop`, `Restart`, `ConfigGet`, `ConfigSet`, `ConfigUnset`, `Connect`, `Disconnect`, `Alias`, `Unalias`, and `Logs`. `list_one` isn't recorded, because `ensure_installed` calls it on every run, and it would be noise in every assertion. Only operations that succeeded are recorded. A failure that the test injected shows up in the charm's behaviour, not in `history`.
 
 A reconcile-style charm will probably ignore `history` and assert on `installed`, and a charm with ordering constraints will do the reverse. Neither is required.
 
@@ -260,7 +260,7 @@ def test_workload_manager(snapd):
 
 Endpoints the double doesn't model raise `NotImplementedError` naming the path, rather than returning an empty success. If a charm uses something the double doesn't cover, its test should fail with a clear message rather than pass when it shouldn't.
 
-We've deliberately not modelled two pieces of snapd behaviour, because both are machine state that a test has no correct value for.
+Two pieces of snapd behaviour are deliberately not modelled, because both are machine state that a test has no correct value for.
 
 Real snapd rejects an unknown system option (`snap.set('system', {'totally.bogus.key': 'x'})`) as a failed change. Modelling that would mean carrying snapd's option schema, which is large, changes between snapd versions, and isn't something charm tests assert against. The double stores any key.
 
@@ -270,7 +270,7 @@ The library's own socket handling (connection retries, the request timeout, and 
 
 ### Avoiding drift
 
-The ongoing risk with any test double is drift: the double's snapd moves away from the real one, and charm tests pass against behaviour that real snapd doesn't have. We have two mitigations in place.
+The ongoing risk with any test double is drift: the double's snapd moves away from the real one, and charm tests pass against behaviour that real snapd doesn't have. There are two mitigations in place.
 
 The first is that `snap`'s own unit tests run through the double. Every outcome-based test in `snap/tests/unit/` was converted from a mocked client with canned responses to a `Snapd`. That means every `charmlibs.snap` change is tested against the double in the same CI run, and if a library change isn't matched in the double, it fails there rather than in some charm's test suite. By file:
 
@@ -287,7 +287,7 @@ The second is that the functional suite is the reference. `snap/tests/functional
 
 The double works with `ops.testing`, but doesn't depend on it or register into it. `ops.testing.State` models state that Juju owns. Snaps are machine state that Juju knows nothing about, so a `State(snaps=...)` field would be in the wrong place (and would raise the question of why apt packages and systemd units aren't there too). `Context` has no extension point for a library to add state or mocks to a run, so with `Context` the double wraps `Context.run()` rather than living inside it. That has a useful side effect: the same object works under `Harness` and in plain pytest. OP089's `Juju` does have an extension point, which is OP093's `mocked()`. `Juju` opens it around every dispatch for each testing package it discovers, and `snap_testing.mocked()` joins an outer `Snapd` when there is one (see [`mocked`](#mocked)). OP089 dropped its own `snap` default mock on 7 Oct 2026 so that a `charmlibs-snap` testing package could take its place, and this package is meant to fill that gap.
 
-The fixture already wraps the whole test, which covers everything that wrapping `Context.run()` would. The one gap is a test that calls `Context.run()` more than once with the same `Snapd`, where `history` builds up across the runs. If that turns out to matter, we can solve it in `charmlibs-snap-testing` without touching ops. For example, there could be a way to mark a point in `history` and ask for what came after it.
+The fixture already wraps the whole test, which covers everything that wrapping `Context.run()` would. The one gap is a test that calls `Context.run()` more than once with the same `Snapd`, where `history` builds up across the runs. If that turns out to matter, it can be solved in `charmlibs-snap-testing` without touching ops. For example, there could be a way to mark a point in `history` and ask for what came after it.
 
 ## Further Information
 
@@ -297,14 +297,14 @@ The double is built, as a new `charmlibs-snap-testing` distribution, on the [`fe
 
 On the branch, `just unit snap` passes (857 passed, 14 skipped) with `snap`'s unit tests converted to the double, and the double's own suite passes (137).
 
-We ran `snap`'s full functional suite against snapd 2.76 in a VM (501 passed), and then probed the known disagreements directly on the snapd socket to get snapd's exact responses. There were five candidate disagreements. Four were real bugs in the double, and they're fixed:
+`snap`'s full functional suite was run against snapd 2.76 in a VM (501 passed), and the known disagreements were then probed directly on the snapd socket to get snapd's exact responses. There were five candidate disagreements. Four were real bugs in the double, and they're fixed:
 
 * With a store described, a refresh with no channel followed `latest/stable` instead of the channel the snap tracks.
 * A service action on a snap that isn't installed raised the wrong error kind and message.
 * `connect` didn't reject an empty plug snap or plug name.
 * `system` and `core` configuration diverged once a `core` snap was in the starting state, and survived removing it. (The second part needed its own check, in a throwaway container, since `core` can't be removed from under a running snapd.)
 
-The fifth turned out to be the double behaving correctly. The two unmodelled behaviours in [Scope for a first release](#scope-for-a-first-release) came out of the same pass. They're real differences from snapd, and we've left them that way on purpose.
+The fifth turned out to be the double behaving correctly. The two unmodelled behaviours in [Scope for a first release](#scope-for-a-first-release) came out of the same pass. They're real differences from snapd, left that way on purpose.
 
 The first three bugs aren't visible through the public functions, which turn all of them into `NotInstalledError`. The double's own tests for them assert on the raw endpoint responses, which is the level the functional probe measured at.
 
@@ -312,7 +312,7 @@ The first three bugs aren't visible through the public functions, which turn all
 
 Monkeypatching the library's public functions in each charm's tests is the status quo, and its problems are covered in [Rationale](#rationale).
 
-We considered a submodule, `charmlibs.snap.testing`, instead. That would avoid the double reaching into the library's private `_client` module from another distribution. However, it would ship a fake snapd in every charm that uses `charmlibs.snap`, and it wouldn't get the CI check that keeps a `-testing` distribution's version identical to its library's. The cross-distribution access is private across packages, not private across teams: it's the same repo and the same owners, and the version lock means the two can't drift apart without anyone noticing.
+A submodule, `charmlibs.snap.testing`, was considered instead. That would avoid the double reaching into the library's private `_client` module from another distribution. However, it would ship a fake snapd in every charm that uses `charmlibs.snap`, and it wouldn't get the CI check that keeps a `-testing` distribution's version identical to its library's. The cross-distribution access is private across packages, not private across teams: it's the same repo and the same owners, and the version lock means the two can't drift apart without anyone noticing.
 
 ### Related specs
 
