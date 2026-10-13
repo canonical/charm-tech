@@ -42,6 +42,27 @@ snap list-services
 snapcraft show-release-status
 ```
 
+## Grammar: Accepted Verbs and Symmetry
+
+```
+# ✅ Accepted verbs, not invented synonyms
+snap save firefox
+snap restore 42
+snap forget 42
+
+# ⚠️ Avoid: a novel verb when an accepted one means the same
+cmd verify config.yaml       # use validate
+cmd nuke my-widget           # ambiguous and informal; use remove
+
+# ✅ Symmetrical verbs within a command family
+cmd create-foo foo1
+cmd delete-foo foo1
+
+# ⚠️ Avoid: mismatched pairs
+cmd add-foo foo1
+cmd delete-foo foo1
+```
+
 ## Grammar: Sublevels
 
 ```
@@ -272,6 +293,86 @@ $
 # ⚠️ Avoid: ambiguous formats
 06/29/2024 3:24 AM
 29 Jun 2024
+```
+
+## Help Output
+
+```
+# ✅ Top-level help: version, usage, summary, global options, grouped commands, pointer to more help
+$ snap help
+snap 2.67
+Usage:
+    snap <command> [<options>...]
+
+    The snap command lets you install, configure, refresh and remove snaps.
+
+Global options:
+  --help       Show this help message and exit
+  --quiet      Only show warnings and errors, not progress
+  --verbose    More verbose output, repeat to increase detail
+  --version    Show the application version and exit
+
+Basic commands:
+  find         Find packages to install
+  install      Install snaps on the system
+  remove       Remove snaps from the system
+  list         List installed snaps
+
+Other topics:
+  Snapshots    saved, save, check-snapshot, restore, forget
+  Account      login, logout, whoami
+
+For more information about a command, run 'snap help <command>'.
+For more information about a topic, run 'snap help <topic>'.
+
+# ✅ Command help: options grouped by function, values and defaults shown, examples, related commands
+$ snap help install
+Usage:
+  snap install [<option>...] <snap>...
+
+The install command installs the named snaps on the system. With no further options, the snaps are installed tracking the stable channel, with strict security confinement.
+
+Channel and revision options:
+  --stable               Install from the stable channel (default)
+  --channel=<channel>    Use the specified channel instead of stable
+Installation mode options:
+  --devmode              Put snap in development mode and disable security confinement
+  --dangerous            Install the given snap file even if there are no pre-acknowledged signatures for it (implied by --devmode)
+
+Examples:
+  Install the latest snap from the stable channel
+    snap install btop
+
+Related commands:
+  snap find    Find snaps to install
+  snap info    Get information about a snap and its available channels
+
+# ⚠️ Avoid: one flat option list, no value placeholder, implication buried in prose
+[install command options]
+      --channel=      Use this channel instead of stable
+      --edge          Install from the edge channel
+      --devmode       Put snap in development mode and disable security confinement
+```
+
+## Changing a CLI
+
+```
+# ✅ Minor version: still works, deprecation warning on stderr naming the replacement
+$ foo bar --qux
+warning: "--qux" flag is deprecated, use "--waldo" instead
+
+$ foo bar
+warning: "foo bar" is deprecated and will be removed in the 3.0 release
+
+# ✅ Next major version: fails (exit code 2) with a message naming the replacement
+$ lxc launch <image> <instance> -c key=value
+error: "-c" flag was removed, use "--config" instead
+
+# ✅ Major version after that: plain error, messaging removed
+$ lxc launch <image> <instance> -c key=value
+error: invalid flag "-c"
+
+# ⚠️ Avoid: removing or renaming without a deprecation release first
 ```
 
 ---

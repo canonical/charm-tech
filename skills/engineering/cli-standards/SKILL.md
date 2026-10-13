@@ -63,13 +63,9 @@ snap list            # for listing primary objects (snaps)
 
 ### Accepted verbs beyond the table
 
-These verbs are also in full compliance with the standard, and are preferred over
-inventing a synonym:
+These verbs are also in full compliance with the standard, and are preferred over inventing a synonym:
 
-`add`/`remove`, `submit`, `request`, `revoke`, `init`, `enable`/`disable`, `save`,
-`refresh`, `switch`, `restore`, `forget`, `report`, `set`/`unset`, `try`, `download`,
-`clean`, `pull`, `build`, `stage`, `prime`, `pack`, `test`, `abort`, `validate`, `watch`,
-`prune`.
+`add`/`remove`, `submit`, `request`, `revoke`, `save`, `refresh`, `switch`, `restore`, `forget`, `report`, `try`, `download`, `clean`, `pull`, `build`, `stage`, `prime`, `pack`, `test`, `abort`, `validate`, `watch`, `prune`.
 
 A verb outside this list and the table above is only a problem when either:
 
@@ -78,8 +74,7 @@ A verb outside this list and the table above is only a problem when either:
 
 If no listed verb is close *and* the verb reads clearly, it is fine — do not flag it.
 
-Within one command family acting on the same object, verbs must be symmetrical:
-`add`/`remove` or `create`/`delete`, never `add`/`delete`.
+Within one command family acting on the same object, verbs must be symmetrical: `add`/`remove` or `create`/`delete`, never `add`/`delete`.
 
 ### Sublevels
 At most **one** sublevel may be used. Alternatively, split into separate tools with associated names:
@@ -205,10 +200,7 @@ Use ISO 8601: `2024-06-29T03:24:20Z`
 
 ## Help Output
 
-All tools must support `tool help`, `tool --help`, `tool -h`, `tool help <command>`, and
-`tool <command> --help`. Top-level help needs usage, a one-sentence summary, global
-options, the command list, and a pointer to per-command help; every flag needs a
-one-line description, plus its accepted values and default where it has them.
+All tools must support `tool help`, `tool --help`, `tool -h`, `tool help <command>`, and `tool <command> --help`. Top-level help needs usage, a short summary, global options, the command list, and a pointer to per-command help; every flag needs a one-line description, plus its accepted values and default where it has them.
 
 For the full normative rules, see [help.md](references/help.md).
 
@@ -216,17 +208,13 @@ For the full normative rules, see [help.md](references/help.md).
 
 ## Changing a CLI
 
-A CLI's surface is a compatibility promise: command names, flag names, exit codes, and
-the shape of machine-readable output are all interfaces that scripts depend on.
+A CLI's surface is a compatibility promise: command names, flag names, exit codes, and the shape of machine-readable output are all interfaces that scripts depend on.
 
-- Deprecate in a minor version: keep the old form working, warn on stderr, and name the
-  replacement.
-- Break in a major version: the old form fails with a message naming the replacement.
-- Remove the messaging the major version after that.
+- Deprecate in a minor version: keep the old form working, warn on stderr, and name the replacement (or, for a removal, the version it will be removed in).
+- Break in a major version: the old form fails with a message saying it was removed, naming the replacement if there is one.
+- Remove the messaging in the next major version after that.
 
-For what counts as a breaking change, and the full deprecation and versioning policy,
-see Canonical's
-[CLI versioning and deprecation guide](https://github.com/canonical/cli-skill/blob/main/cli-skill/references/deprecation.md).
+For what counts as a breaking change, and the full deprecation and versioning policy, see Canonical's [CLI versioning and deprecation guide](https://github.com/canonical/cli-skill/blob/main/cli-skill/references/deprecation.md).
 
 ---
 
