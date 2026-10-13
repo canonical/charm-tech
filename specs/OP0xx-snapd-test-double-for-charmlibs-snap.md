@@ -12,6 +12,8 @@
 
 This spec proposes a stateful test double, `Snapd`, that replaces the library's client layer and leaves the rest of the library running for real. A charm test can then assert on what the charm asked snapd to do, and on the machine state that resulted, in the same test that runs the charm's event handlers under `ops.testing`.
 
+The double ships as `charmlibs.snap`'s testing package, with the `mocked()` that OP093 requires of every library. That's also how OP089's `Juju` picks it up by default.
+
 There's a working proof of concept (see [Further Information](#further-information)).
 
 ## Rationale
@@ -38,9 +40,9 @@ The code paths that are most worth testing are also the ones an ad-hoc stub can'
 
 ### Packaging
 
-The double is a separate distribution, `charmlibs-snap-testing`, imported as `from charmlibs import snap_testing`. It lives in the `charmlibs` monorepo at `snap/testing/`, and follows the layout and version lock that OP077 sets out for testing packages. It would be the first `*-testing` package to ship, so it's also the first real exercise of that part of the repo machinery.
+The double is a separate distribution, `charmlibs-snap-testing`, imported as `from charmlibs import snap_testing`. It lives in the `charmlibs` monorepo at `snap/testing/`, and follows the layout and version lock that OP077 sets out for testing packages. Its API follows OP093, which replaces OP077's API recommendations (see [`mocked`](#mocked)). It would be the first testing package for a library that isn't an interface library.
 
-It depends on `charmlibs-snap` (at the identical version) and nothing else. In particular, it doesn't depend on `ops[testing]`. The template includes that because interface-testing packages return `ops.testing.Relation` objects, but a snapd double doesn't return anything ops-shaped. Keeping ops out of the dependencies means the double works under `ops.testing`, under `Harness`, or with neither.
+It depends on `charmlibs-snap` (at the identical version) and nothing else. In particular, it doesn't depend on `ops[testing]`. The template includes that because interface-testing packages return stand-in charms (OP093's `provider` and `requirer`), but a snapd double doesn't return anything ops-shaped. Keeping ops out of the dependencies means the double works under `ops.testing`, under `Harness`, or with neither.
 
 A `snapd` pytest fixture is registered with a `pytest11` entry point, so installing the package is enough to make it available.
 
@@ -65,7 +67,31 @@ Only the I/O is replaced.
 
 This isn't a new seam. The library's own unit tests already patched the same four functions, but with canned responses for each test. The double patches in a model that changes as the charm acts.
 
-A `Snapd` can only be used once, like `ops.testing.Context`. Entering one a second time raises an error, so a test can't accidentally carry state from one run into the next.
+A `Snapd` is reentrant, as OP093 requires of mocking: a fixture and the test that uses it can each open it, and `Juju` can open `mocked()` inside it (below). It can only be used for one test, though, like `ops.testing.Context`. Entering it again after its outermost scope has exited raises an error, so a test can't accidentally carry state from one run into the next.
+
+### `mocked`
+
+OP093 requires every library's testing package to define `mocked()`: a reentrant context manager, callable with no arguments, that mocks out the library's own internals. snap isn't an interface library, so `mocked()` is all `snap_testing` needs from OP093. It doesn't define `provider` or `requirer`.
+
+`snap_testing.mocked()` is a thin layer over `Snapd`:
+
+* If a `Snapd` is already open, `mocked()` joins it and does nothing else. The charm talks to the test's `Snapd`, whoever opened the inner scope.
+* Otherwise, it opens a fresh, empty `Snapd` with no store described (so any snap installs) for the length of its own scope.
+
+This is what lets the double work with OP089's `Juju`, which opens each discovered testing package's `mocked()` around every dispatch as a default mock. A test that wants snapd state to last across dispatches, or wants to assert on it, opens a `Snapd` (or uses the `snapd` fixture) around the whole test, and `Juju`'s per-dispatch scopes join it:
+
+```python
+def test_prometheus_installs_on_deploy(snapd):
+    juju = ops.testing.Juju()
+    juju.deploy("./charms/prometheus")
+    juju.settle()
+
+    assert snapd.installed['prometheus'].channel == '2/stable'
+```
+
+Without an outer `Snapd`, each dispatch starts with an empty snapd, so a snap installed in `install` isn't there in the next hook. That's what OP089's former `snap` default mock did, and it's enough for a charm whose snap use isn't what the test is about. It isn't scope-insensitive in the sense that OP093's open question on mocking scope discusses, though: the result depends on whether the scope is opened once per test or once per dispatch. This spec doesn't try to settle that question. Holding snapd state in the scope is the natural model, and the outer `Snapd` is the explicit way to choose a lifetime for it. If OP093 makes scope-insensitivity a rule, the bare `mocked()` would need to keep its state somewhere else, keyed by the unit, and `Snapd` itself wouldn't change.
+
+`mocked()` takes no arguments. The starting state, store, and failures belong to a `Snapd`, because a test that cares about them also wants a handle to assert on afterwards.
 
 ### Setting up a test
 
@@ -259,7 +285,7 @@ The second is that the functional suite is the reference. `snap/tests/functional
 
 ### Relationship to `ops.testing`
 
-The double works with `ops.testing`, but doesn't depend on it or register into it. `ops.testing.State` models state that Juju owns. Snaps are machine state that Juju knows nothing about, so a `State(snaps=...)` field would be in the wrong place (and would raise the question of why apt packages and systemd units aren't there too). `ops.testing` also has no extension point for a library to add state or mocks to a `Context` run. So the double wraps `Context.run()` rather than living inside it. That has a useful side effect: the same object works under `Harness` and in plain pytest.
+The double works with `ops.testing`, but doesn't depend on it or register into it. `ops.testing.State` models state that Juju owns. Snaps are machine state that Juju knows nothing about, so a `State(snaps=...)` field would be in the wrong place (and would raise the question of why apt packages and systemd units aren't there too). `Context` has no extension point for a library to add state or mocks to a run, so with `Context` the double wraps `Context.run()` rather than living inside it. That has a useful side effect: the same object works under `Harness` and in plain pytest. OP089's `Juju` does have an extension point, which is OP093's `mocked()`. `Juju` opens it around every dispatch for each testing package it discovers, and `snap_testing.mocked()` joins an outer `Snapd` when there is one (see [`mocked`](#mocked)). OP089 dropped its own `snap` default mock on 7 Oct 2026 so that a `charmlibs-snap` testing package could take its place, and this package is meant to fill that gap.
 
 The fixture already wraps the whole test, which covers everything that wrapping `Context.run()` would. The one gap is a test that calls `Context.run()` more than once with the same `Snapd`, where `history` builds up across the runs. If that turns out to matter, we can solve it in `charmlibs-snap-testing` without touching ops. For example, there could be a way to mark a point in `history` and ask for what came after it.
 
@@ -291,8 +317,10 @@ We considered a submodule, `charmlibs.snap.testing`, instead. That would avoid t
 ### Related specs
 
 * OP077 (charm library testing) sets out the layout, the `[testing]` extra, and the version lock that `charmlibs-snap-testing` follows.
+* OP093 (charmlibs testing packages API) replaces OP077's API recommendations. It requires the `mocked()` that `snap_testing` defines, and has the open question on mocking scope that [`mocked`](#mocked) points to.
+* OP089 (multiple-charm state transition tests) defines `Juju`, which opens each testing package's `mocked()` around every dispatch.
 
 ### Future work
 
-* An extension point in `ops.testing`, so that libraries can register test doubles with a `Context` (for example, `Context(charm, extensions=[snapd])`), is a separate conversation, and this spec doesn't settle it. The double doesn't need one as it stands. I think it's worth having that conversation now that there's a prototype to look at. Anything like that would build on the context manager protocol that `Snapd` already implements, so adopting one later wouldn't change the double's public API.
+* An extension point for `Context`, matching what OP093's `mocked()` gives `Juju`, so that a single-charm test doesn't have to open its doubles itself (for example, `Context(charm, extensions=[snapd])`), is a separate conversation, and this spec doesn't settle it. The double doesn't need one as it stands. Anything like that would build on the context manager protocol that `Snapd` already implements, so adopting one later wouldn't change the double's public API.
 * `apt`, `systemd`, `sysctl`, and `passwd` don't share `snap`'s seam. Each wraps `subprocess` rather than a client object, and `sysctl` and `passwd` also read and write files. So this double is specific to snaps for now. The parts that would generalise (the operation history, failure injection, and entering several doubles at once) are small, and moving them into a shared package later would only add to it. The fixtures also make it easy to combine doubles: `def test_x(snapd, apt):`.
