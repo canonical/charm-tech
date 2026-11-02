@@ -105,18 +105,7 @@ Using AI shouldn't make a pull request harder to review. Keep it focused, explai
 
 #### Perform security-focused AI review
 
-Canonical's Secure Software Development Lifecycle (SSDLC) policy applies to some products and release types. Beginning in the 27.04 cycle, these must have a developer-led, AI-assisted security review during development or before peer review, and before any versioned release. It complements static application security testing and manual security review, and doesn't replace either.
-
-The review should run targeted prompts against the Git diff. It should also look at enough of the surrounding code to assess "Secure by Design" principles, the relevant threat-model scenarios, and possible exploit paths. Pay particular attention to:
-
-* authentication and server-side authorisation, including object- and function-level checks;
-* cryptography, parsing and validating external input, data storage, and external API integrations;
-* hard-coded secrets, unsafe deserialisation, injection risks, and unsafe APIs where safer ones exist; and
-* failure paths that expose sensitive information, fail insecurely, or skip appropriate security logging.
-
-The Jira ticket for the work must document or link to the AI review tool or workflow used. Findings need human triage, and go into the same security finding tracker and remediation process as findings from anywhere else. A person must understand and validate any AI-suggested fix before it's merged. AI review is advisory. It can't approve a pull request, or count as the required human approval (from someone other than the requester) on default and release branches.
-
-Where the SSDLC applicability matrix requires it, there's also AI-driven security research before release. This uses an autonomous agent or a specialised verification framework to examine the wider codebase, especially high-risk components and first-party code. It can look for flaws that span several components, generate adversarial or malformed inputs, and test boundary conditions. It can also check abuse cases from the threat model, and formally verify critical safety or memory properties. We triage and track these findings, and don't treat agent output as confirmed vulnerabilities.
+Canonical's Secure Software Development Lifecycle (SSDLC) policy requires a developer-led, AI-assisted security review for some products and release types, starting in the 27.04 cycle. The [SSDLC Vulnerability Discovery and Identification policy](https://library.canonical.com/corporate-policies/information-security-policies/ssdlc/ssdlc---vulnerability-discovery-and-identification) sets out when the review applies, what it covers, and how to track its findings. Like any AI review, it's advisory, and doesn't replace peer review.
 
 ### Human responsibility and attribution
 
