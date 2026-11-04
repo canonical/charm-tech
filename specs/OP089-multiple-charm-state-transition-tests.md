@@ -19,7 +19,7 @@ This spec defines a multi-charm unit (state-transition) test surface added to `o
 - **Integration tests are slow.** A real Juju controller bootstrap and deploy round-trip takes minutes; unit tests should be measured in seconds.
 - **Bundle (or solution) and topology assertions are unreachable from unit (state transition) tests.** Asserting "if I deploy A and B and integrate them, A's leader ends up with config X" requires a real Juju or fragile mocks today.
 
-The shape charmers have asked Charm Tech for is 'a multi-charm test tool that feels like Juju but has the speed of unit tests'. This is [Catan's](https://github.com/pietropasotti/catan) abstraction (Apps, `integrate`, convergence / settle).
+The shape charmers have asked Charm Tech for is 'a multi-charm test tool that feels like Juju but has the speed of unit tests'. This is [Catan's](https://github.com/PietroPasotti/catan) abstraction (Apps, `integrate`, convergence / settle).
 
 Why ops.testing rather than a companion package? This is a non-trivial addition to `ops-scenario`, but not so large that it merits a new `ops-{something}` package, with the packaging overhead that comes from that.
 
@@ -41,7 +41,7 @@ A stand-in is a `CharmSpec`, returned by the testing package's `provider()` or `
 
 The stand-in runs in the test process, with the test process's copy of the library, so the charm under test and the stand-in are always on the same library version. When testing with a real remote charm, running in a separate process, the remote charm might be on a different version of the library instead, just like real Juju deployments.
 
-OP093's stand-ins need `Juju`, `deploy()`, `integrate`, and `CharmSpec`, so they land after those. OP093's mocking API doesn't depend on this spec and could land first. Library mocking reuses OP093's `mocked()` (see [*Mocking*](#metadata-resolution)).
+OP093's stand-ins need `Juju`, `deploy()`, `integrate`, and `CharmSpec`, so they land after those. OP093's mocking API doesn't depend on this spec and could land first. Library mocking reuses OP093's `mocked()` (see [*Mocking*](#mocking)).
 
 ## Specification
 
@@ -55,7 +55,7 @@ OP093's stand-ins need `Juju`, `deploy()`, `integrate`, and `CharmSpec`, so they
 * the single-application operations - `deploy`, `integrate`, `remove_relation`, `add_unit`, `remove_unit`, `config`, and `settle`, with peer and cross-application relation convergence
 * secrets shared across units and applications, excluding user secrets, and the other model state Juju shares between units (see [*State shared across units and applications*](#state-shared-across-units-and-applications))
 * deploying an in-process charm described by a `CharmSpec` (its class, metadata, and mock), including a charm library's stand-in (see [*Relationship to OP093*](#relationship-to-op093))
-* charm-provided mocking and a set of default mocks, applied around each charm's dispatches both in-process and in isolated workers (see [*Mocking*](#metadata-resolution))
+* charm-provided mocking and a set of default mocks, applied around each charm's dispatches both in-process and in isolated workers (see [*Mocking*](#mocking))
 * isolated environments (`isolated=True`), which the system builds and caches from the charm's declared dependencies, for charms using the `uv` or `python` plugin
 
 **Directional only** (the spec describes these so that the intended trajectory is visible; the APIs shown are sketches and the designs are open)
@@ -65,9 +65,9 @@ OP093's stand-ins need `Juju`, `deploy()`, `integrate`, and `CharmSpec`, so they
 * `Juju.run` for actions: running an action on a single unit is covered by `Unit.to_context()` and `Context.run`. `Juju.run` would only add value where the action's effects need to propagate to other units, such as a peer relation-changed, or a stand-in that revokes what it has issued (OP093 lists this as one way to change a stand-in's behaviour partway through a test)
 * stepping through convergence one event at a time: Juju does, essentially, step (each charm is woken for each event), but state transition tests already cover single-event tests, and the `settle()` trace provides each intermediate `State` for assertions
 * providing an argument for `settle()` similar to Jubilant's arguments to `wait()` to determine whether to stop after an event completes, as an alternative to stepping through events one at a time
-* letting a test switch off one of the default mocks for a charm it deploys, as a separate `deploy()` argument (see [*Mocking*](#metadata-resolution))
+* letting a test switch off one of the default mocks for a charm it deploys, as a separate `deploy()` argument (see [*Mocking*](#mocking))
 * user secrets (`add_secret`, `grant_secret`, `update_secret`, and `remove_secret` methods on `Juju`)
-* passing `mocked=` to an isolated charm, and changing a charm's mocking arguments between `settle()` calls (see [*Mocking*](#metadata-resolution))
+* passing `mocked=` to an isolated charm, and changing a charm's mocking arguments between `settle()` calls (see [*Mocking*](#mocking))
 * `remove_application`, for testing a charm's clean-up and a remote application going away in one call. The application would leave `Juju.apps` once its units' `remove` hooks have run, as a unit leaves `App.units` after `remove_unit()`
 * a clock that `Juju` applies around each dispatch and advances between dispatches, shared with isolated charms, so that charms that depend on time settle deterministically. This is only worth adding if determinism that excludes time causes real problems in tests
 * moving the `subprocess` and `filesystem` defaults for machine charms onto `State`, as state transition tests gain filesystem and exec mocking for charms, as `Container` already has for Pebble
@@ -225,11 +225,11 @@ A unit's `State` is an immutable `testing.State`, replaced rather than modified 
 
 ##### `Juju` attributes
 
-`Juju.deploy(...)` returns an `App` handle. An `App` owns its charm reference, the charm's metadata (read from disk, or taken from a `CharmSpec`), the environment it runs in (see [*Isolation model*](#isolation-model:-subprocess-+-per-charm-virtual-environment)), and its per-unit `State`s; `App.units` indexes them and `App.leader` is the leader.
+`Juju.deploy(...)` returns an `App` handle. An `App` owns its charm reference, the charm's metadata (read from disk, or taken from a `CharmSpec`), the environment it runs in (see [*Isolation model*](#isolation-model-subprocess--per-charm-virtual-environment)), and its per-unit `State`s; `App.units` indexes them and `App.leader` is the leader.
 
 `Juju.apps` maps each application's name to its App (populating on `deploy`). A test or fixture can reach any application through it without keeping the handle `deploy()` returned, and a `Dispatch`'s app leads back to the live `App` with `juju.apps[d.app]`. It's read-only: applications are added with `deploy()`.
 
-`mocked=` is passed to the charm's own `mocked()`, or to a `CharmSpec`'s `mocking`, as keyword arguments, so a test can change how that charm's mocks behave without patching anything itself. In the initial implementation it's only for charms that run in the test process, and `deploy()` rejects it when used with `isolated=True` (see [*Mocking*](#metadata-resolution)). It has to be JSON-serialisable, so that allowing it for isolated charms later is purely an addition.
+`mocked=` is passed to the charm's own `mocked()`, or to a `CharmSpec`'s `mocking`, as keyword arguments, so a test can change how that charm's mocks behave without patching anything itself. In the initial implementation it's only for charms that run in the test process, and `deploy()` rejects it when used with `isolated=True` (see [*Mocking*](#mocking)). It has to be JSON-serialisable, so that allowing it for isolated charms later is purely an addition.
 
 `state_template=` is the starting point for every unit's `State`, including units added later with `add_unit`. It's how a test supplies what the system can't know: `Exec` mocks and layers on containers, networks, resources, and so on. The system owns the fields that describe a unit's place in the model (`leader`, `planned_units`, `model`, `config`, `relations`, `secrets`, ...). A template that sets any of those is rejected by `deploy()` with a `JujuError` naming the field. It's a `State` rather than a type of its own so that a test builds it from the same objects that single-charm tests use, and so that anything added to `State` later can be used here without a matching change. For example, relations come from peer endpoints and `integrate`, config comes from `config=`, and secrets come from the charms themselves or from `add_secret` (see [*State shared across units and applications*](#state-shared-across-units-and-applications)).
 
@@ -259,7 +259,7 @@ Each unit's `State` is that unit's view of the model, but some of what is in it 
 
 Relation data is the obvious case, and is covered by `integrate` above. The others are:
 
-* **Juju-written relation data.** Juju itself writes `ingress-address`, `egress-subnets`, and `private-address` into each unit's databag, and the remote units read them. `Juju` fills them in with addresses derived from the unit and model names, consistent with the unit's `networks` and with the hostname default mock (see [*Mocking*](#metadata-resolution)), so they're deterministic and agree with each other.
+* **Juju-written relation data.** Juju itself writes `ingress-address`, `egress-subnets`, and `private-address` into each unit's databag, and the remote units read them. `Juju` fills them in with addresses derived from the unit and model names, consistent with the unit's `networks` and with the hostname default mock (see [*Mocking*](#mocking)), so they're deterministic and agree with each other.
 * **Application status.** The leader sets it, and it belongs to the application rather than the unit, so when leadership moves (for example, after `remove_unit` removes the leader), the new leader's `State` has the status the previous leader set.
 * **Model identity, config, and [planned units](https://canonical.com/juju/docs/ops/latest/reference/ops/#ops.Application.planned_units).** These are already owned by `Juju` (see `state_template=` above), and are the same in every unit's `State` for an application.
 * **Secrets** (see below).
@@ -329,7 +329,7 @@ state_out = ctx.run(waiting.event, waiting.state_in)
 
 `Dispatch.to_context()` builds a `testing.Context` for the unit as it was at that dispatch: the charm and metadata the test gave `deploy()`, the application's trust and the unit ID, with config and leadership coming from `state_in`. Running `d.event` against `d.state_in` in that context runs the dispatch again from the same starting point, without `Juju`'s mocking, so a test can pick up from any point in the history. It behaves like `Unit.to_context()`: a new `Context` on every call, with no mocking beyond what a new `Context` has, and for an isolated charm it imports the charm into the test process, raising `IsolationError` if that fails. The charm source and metadata never change, so `Dispatch` keeps a private reference to them rather than to the `App`.
 
-The trace has no history of the per-unit filesystem (see [*Mocking*](#metadata-resolution)): `Unit.filesystem` is the root as it is now. A per-dispatch filesystem record can be added later if there's a need.
+The trace has no history of the per-unit filesystem (see [*Mocking*](#mocking)): `Unit.filesystem` is the root as it is now. A per-dispatch filesystem record can be added later if there's a need.
 
 There's no way to act partway through convergence. A test that needs to change something between two specific events is a single-charm test, which `Context` already handles, and `Dispatch.to_context()` gives it the starting point.
 
@@ -398,7 +398,7 @@ The default. No isolation, no virtual environment work, and no external tools. I
 
 #### Isolated
 
-This is the `Juju.deploy(..., isolated=True)` form. Juju detects the charm's build plugin, extracts its dependency list, builds a cached virtual environment from it with a matching `ops.testing` (see [*Isolation model*](#isolation-model:-subprocess-+-per-charm-virtual-environment)), and runs the charm in a worker process using that environment's interpreter.
+This is the `Juju.deploy(..., isolated=True)` form. Juju detects the charm's build plugin, extracts its dependency list, builds a cached virtual environment from it with a matching `ops.testing` (see [*Isolation model*](#isolation-model-subprocess--per-charm-virtual-environment)), and runs the charm in a worker process using that environment's interpreter.
 
 Plugin detection is from `charmcraft.yaml`. Extraction per plugin:
 
@@ -413,7 +413,7 @@ All forms normalise to a flat pip specifier list, which is installed with `uv pi
 
 ##### When detection fails
 
-`requirements=` takes the path to a requirements file, as a `str` or a `pathlib.Path`, in the format that `uv pip install -r` accepts. That's also what `uv export` and `poetry export` produce. A relative path is relative to the working directory, as it is for `charm=`, and so are any relative paths inside the file. The file replaces detection and extraction completely, so it has to list everything the charm needs, including its mocking's testing packages and dependency groups. An `ops` or `ops-scenario` line in it does no harm, because the worker imports the test process's copies first (see [Isolation model](#isolation-model:-subprocess-+-per-charm-virtual-environment)). This covers charms with an unusual build, plugins that aren't supported yet, and test infrastructure that already exports a lockfile. `deploy()` rejects `requirements=` without `isolated=True`.
+`requirements=` takes the path to a requirements file, as a `str` or a `pathlib.Path`, in the format that `uv pip install -r` accepts. That's also what `uv export` and `poetry export` produce. A relative path is relative to the working directory, as it is for `charm=`, and so are any relative paths inside the file. The file replaces detection and extraction completely, so it has to list everything the charm needs, including its mocking's testing packages and dependency groups. An `ops` or `ops-scenario` line in it does no harm, because the worker imports the test process's copies first (see [Isolation model](#isolation-model-subprocess--per-charm-virtual-environment)). This covers charms with an unusual build, plugins that aren't supported yet, and test infrastructure that already exports a lockfile. `deploy()` rejects `requirements=` without `isolated=True`.
 
 ##### Tool dependency
 
@@ -594,7 +594,7 @@ A typed schema-aware encoder/decoder pair (not `json.dumps(dataclasses.asdict(st
 1. **A typed escape hatch, always applied**: tag-and-encode `bytes` as base64 and `tuple` as a `["__tuple__", ...]` envelope so they round-trip losslessly. An opt-in mode would create a "passed locally because today's stored-state had no `bytes`, failed in CI when it did" failure mode; a few extra bytes per typed value doesn't justify it.
 2. **Loud error on unrecognised types**: the encoder raises `TypeError` with the type name and the path through `State`. The decoder mirrors: unknown `__type__` tags raise `TypeError`. There is never silent lossy coercion.
 
-The JSON `State` representation is not public API. Both sides of the process boundary run the same `ops.testing` version (see [*Isolation model*](#isolation-model:-subprocess-+-per-charm-virtual-environment)), so the encoded form is internal and may change between releases. The payload embeds the producing version and the decoder asserts it matches its own.
+The JSON `State` representation is not public API. Both sides of the process boundary run the same `ops.testing` version (see [*Isolation model*](#isolation-model-subprocess--per-charm-virtual-environment)), so the encoded form is internal and may change between releases. The payload embeds the producing version and the decoder asserts it matches its own.
 
 #### Serialisation examples
 
@@ -1023,7 +1023,7 @@ What the spec carries forward from Catan:
 
 #### Prior art and references
 
-- [Catan](https://github.com/PietroPasotti/catan):  the abstraction this spec draws from.
+- [Catan](https://github.com/PietroPasotti/catan): the abstraction this spec draws from.
 - [operator#1929](https://github.com/canonical/operator/issues/1929): origin of the `ops.testing`-integrated direction.
 - [Example tests](https://docs.google.com/document/d/155jcnVmf5w7YLZqVey3sUIzNVvzb8KHgJZuMVB5KKPk/edit?usp=sharing) and some comments on (an agent) writing them.
 - [OP093 - charmlibs testing packages API](https://docs.google.com/document/d/1dd_UK-3bIrFn9LhGyHdNNyI8lgg2l6Vbq4iBVtUWwZs/edit?usp=sharing): single-charm testing against a stand-in for the remote charm, provided by the charm library's testing package. The stand-ins deploy through this spec's `Juju`, and library mocking reuses OP093's `mocked()` (see [*Relationship to OP093*](#relationship-to-op093)).
