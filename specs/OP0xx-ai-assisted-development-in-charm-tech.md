@@ -123,7 +123,7 @@ Assisted-by: pi:<model-name-and-version>
 
 Canonical's [AI in the workplace policy](https://library.canonical.com/corporate-policies/ai-governance-policies/artificial-intelligence-%28%22ai%22%29-in-the-workplace-policy) applies to everything this specification covers, and takes precedence where the two differ.
 
-Public code, docs, issues, and pull requests can go to models through OpenRouter. The team OpenRouter account must only route requests to providers that don't keep prompts or train on them, using OpenRouter's zero data retention setting. Private repository content and internal documents can only go to a harness, provider, model, and account approved for that data. If you're not sure whether something is approved, or how it's classified, don't send it.
+Public code, docs, issues, and pull requests can go to models through OpenRouter. Private repository content and internal documents can only go to a harness, provider, model, and account approved for that data. If you're not sure whether something is approved, or how it's classified, don't send it.
 
 Check logs, stack traces, configuration, and generated artefacts before you send them to a model. Never send secrets, credentials, private infrastructure details, customer or employee data, embargoed vulnerabilities, or anything else that isn't public. If you send protected information by accident, follow the normal security incident process. Deleting the conversation isn't enough.
 
