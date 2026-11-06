@@ -31,7 +31,7 @@ It doesn't require anyone to use AI tools, and it doesn't relax any project's co
 | Layer | Choice | Policy |
 | :---- | :---- | :---- |
 | Harness | Pi | The team's supported harness for interactive coding and shared skills. |
-| Models | GLM and Kimi | The default model families. The shared Pi configuration in `canonical/charm-tech` names the current model for each capability tier. |
+| Models | GLM and Kimi | The default model families. `DECISIONS.md` in `canonical/charm-tech` names the current model for each capability tier. |
 | Provider | OpenRouter, or GitHub Copilot for confidential projects | The provider, account, and model must also be approved for the data you send. An endpoint that works isn't necessarily one that's approved. |
 | Project context | `AGENTS.md` | Repository-specific instructions, version-controlled in the repository. |
 | Reusable procedures | Skills | Shared, version-controlled skills in the [Agent Skills](https://agentskills.io) format, so they work in any compatible harness. |
@@ -41,7 +41,7 @@ We record each change to the default models in `DECISIONS.md`. Changing a model 
 
 You're welcome to try another approved harness, but feed what you learn back into the team setup, so it doesn't become a private workflow only you understand.
 
-The team Workshop, our shared LXD-based development environment, includes Pi and the shared configuration. If a task needs something the Workshop doesn't provide, a custom VM or other isolated environment is fine.
+We recommend running Pi in the repository's own Workshop, our LXD-based development environment. Workshops are planned for every repository and include Pi, but some repositories don't have one with Pi yet. In those repositories, or if a task needs something the Workshop doesn't provide, a custom VM or other isolated environment is fine.
 
 #### Why these choices
 
@@ -53,7 +53,7 @@ We prefer open-weight models for our defaults, because that's Canonical's prefer
 
 #### Recommended Pi extensions
 
-Pi extensions are third-party npm packages that run with the same access as Pi. Install only the ones you need, and pin each to a version in the shared configuration. Propose additions in a pull request to this specification.
+Pi extensions are third-party npm packages that run with the same access as Pi. Install only the ones you need, and pin each to a version. Propose additions in a pull request to this specification.
 
 | Extension | What it adds | Notes |
 | :---- | :---- | :---- |
@@ -129,7 +129,7 @@ Check logs, stack traces, configuration, and generated artefacts before you send
 
 ### Boundaries on agent actions
 
-Pi runs tools without asking first, so run it in a sandbox, such as the team Workshop or a VM. Inside the sandbox, an agent can read and edit the checked-out repository and run its development commands. The sandbox and the credentials you give the agent are what stop it doing anything else. Don't rely on it asking before something destructive, hard to reverse, or outside the sandbox.
+Pi runs tools without asking first, so run it in a sandbox, such as the repository's Workshop or a VM. Inside the sandbox, an agent can read and edit the checked-out repository and run its development commands. The sandbox and the credentials you give the agent are what stop it doing anything else. Don't rely on it asking before something destructive, hard to reverse, or outside the sandbox.
 
 Give agents the least access the task needs: scoped, read-only credentials where you can. In particular, don't give an agent credentials that would let it, without a separate approved process:
 
@@ -153,7 +153,7 @@ GitHub Actions is a reasonable place to start, because it already handles events
 
 ### Model choice and evaluation
 
-The shared Pi configuration names a capable default and a lower-cost default that's good enough for ordinary work. Use the lower-cost model for routine work and the more capable one when the task needs it. When you're not confident in an answer, comparing independent answers from both often helps more than prompting the same context again.
+We name a capable default and a lower-cost default that's good enough for ordinary work. Use the lower-cost model for routine work and the more capable one when the task needs it. When you're not confident in an answer, comparing independent answers from both often helps more than prompting the same context again.
 
 We review the defaults roughly monthly. A model doesn't become a default because it tops a benchmark or because one person had a good result with it. We try it on real Charm Tech work and compare it with the current defaults.
 
@@ -171,7 +171,7 @@ We don't need to record every interaction. Write a short experiment record when 
 
 ### Team assets and maintenance
 
-As well as the shared Pi configuration, skills, and experiment records described above, Charm Tech maintains a small example `AGENTS.md` for repositories that need one. We hold a recurring 30-minute AI and testing discussion to share tools, results, and failures, and to propose changes to the defaults.
+As well as the skills and experiment records described above, Charm Tech maintains a small example `AGENTS.md` for repositories that need one. We hold a recurring 30-minute AI and testing discussion to share tools, results, and failures, and to propose changes to the defaults.
 
 ### Project maturity
 
@@ -181,6 +181,6 @@ The aim is for every actively maintained project to have an automated reviewer s
 
 ## Further Information
 
-The common harness and shared configuration draw on SEC068 and MA296. The human accountability, contribution, and data rules draw on CE141, CS309, and OS113. The separation of harness, reusable capabilities, and workflows draws on ISD285 and RK112. The guidance on experiments and costs draws on AC215 and PEALL006. The review and automated-workflow boundaries draw on LP299, CE155, PL103, and BIN-002.
+The common harness and shared setup draw on SEC068 and MA296. The human accountability, contribution, and data rules draw on CE141, CS309, and OS113. The separation of harness, reusable capabilities, and workflows draws on ISD285 and RK112. The guidance on experiments and costs draws on AC215 and PEALL006. The review and automated-workflow boundaries draw on LP299, CE155, PL103, and BIN-002.
 
 The security-review requirements draw on SSDLC Vulnerability Discovery and Identification (SEC0025), Vulnerability Response (SEC0026), and the Code Repository Security Policy (SEC0065).
