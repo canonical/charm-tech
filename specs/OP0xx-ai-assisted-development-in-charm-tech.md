@@ -173,7 +173,7 @@ We don't need to record every interaction. Write a short experiment record when 
 
 ### Team assets and maintenance
 
-As well as the skills and experiment records described above, Charm Tech maintains a small example `AGENTS.md` for repositories that need one. We hold a recurring 30-minute AI and testing discussion to share tools, results, and failures, and to propose changes to the defaults.
+The `agents-md` skill in `canonical/charm-tech` helps write an `AGENTS.md` for repositories that need one. We hold a recurring 30-minute AI and testing discussion to share tools, results, and failures, and to propose changes to the defaults.
 
 ### Project maturity
 
