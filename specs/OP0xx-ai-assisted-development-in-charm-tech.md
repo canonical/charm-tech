@@ -116,8 +116,10 @@ An agent must never add a `Signed-off-by` line for you. Only you can certify the
 We don't require AI attribution on commits or pull requests, but repositories and upstream projects may have their own rules, and those take precedence. Where attribution is useful or required, use an `Assisted-by` trailer naming the harness and model:
 
 ```
-Assisted-by: pi:<model-name-and-version>
+Assisted-by: <harness>:<model-name-and-version>
 ```
+
+For example, `Assisted-by: pi:glm-5.3`.
 
 ### Data and security
 
