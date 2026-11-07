@@ -55,17 +55,6 @@ Per-file commands are faster and cheaper than full project builds. Always includ
 | Test | `pnpm jest path/to/file.test.ts` |
 ```
 
-### Commit Attribution
-Always include this section. Agents should use their own identity:
-````markdown
-## Commit Attribution
-AI commits MUST include:
-```
-Co-Authored-By: (the agent's name and attribution byline)
-```
-Example: `Co-Authored-By: Claude Sonnet 4 <noreply@example.com>`
-````
-
 ### Key Conventions
 Project-specific patterns agents must follow. Keep brief.
 
@@ -77,6 +66,7 @@ Add only if truly needed:
 - File naming conventions
 - Project structure hints (point to critical files, flag legacy code to avoid)
 - Monorepo overrides (subdirectory `AGENTS.md` files override root)
+- Commit attribution, only if the repository requires it: `Assisted-by: <harness>:<model-name-and-version>`
 
 ## Anti-Patterns
 
@@ -97,12 +87,6 @@ Omit these:
 
 ## Package Manager
 Use **pnpm**: `pnpm install`, `pnpm dev`
-
-## Commit Attribution
-AI commits MUST include:
-```
-Co-Authored-By: (the agent's name and attribution byline)
-```
 
 ## File-Scoped Commands
 | Task | Command |
