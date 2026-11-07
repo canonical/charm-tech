@@ -45,7 +45,7 @@ We recommend running Pi in the repository's own Workshop, our LXD-based developm
 
 #### Why these choices
 
-Pi is minimal and extensible, which matches how we like to build our own tools. It's highly customisable, but it's also opinionated, and we like that too. By default it runs tools without asking for approval. We think that's the right default, as long as it runs in a sandbox. Pi is open source under the MIT licence. We admire the [values of Earendil](https://earendil.com/values/), the company behind Pi, and we expect [Pi Durable](https://earendil.com/posts/pi-durable/) to be worth exploring.
+Pi is minimal and extensible, which matches how we like to build our own tools. It's highly customisable, but it's also opinionated, and we like that too. By default it runs tools without asking for approval. We think that's the right default, as long as it runs in a sandbox. Pi is open source under the MIT licence, although some future parts may be [Fair Source](https://fair.io). We admire the [values of Earendil](https://earendil.com/values/), the company behind Pi, and we expect [Pi Durable](https://earendil.com/posts/pi-durable/) to be worth exploring.
 
 Canonical lets us choose between GitHub Copilot, Gemini, and OpenRouter as the provider. In our experience, Gemini models generally aren't good enough. We tried Copilot, but we found that OpenRouter's flexibility suits us better. Copilot is still required for confidential projects.
 
