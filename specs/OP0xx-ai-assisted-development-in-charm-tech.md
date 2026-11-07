@@ -61,7 +61,7 @@ Pi extensions are third-party npm packages that run with the same access as Pi. 
 | [`pi-subagents`](https://github.com/nicobailon/pi-subagents) | Delegation to a subagent, and scripted multi-agent workflows. | Useful for review passes in a fresh context. |
 | [`pi-web-access`](https://github.com/nicobailon/pi-web-access) | Web search, fetching URLs, cloning repositories, and extracting text from PDFs. | Search queries go to a third-party search provider, so the data rules here apply to them too. |
 | [`pi-prompt-template-model`](https://github.com/nicobailon/pi-prompt-template-model) | Lets a prompt template choose the model it runs with. | Makes it easy to send routine tasks to the lower-cost default. |
-| `pi-intercom` | Messaging between Pi sessions on the same machine. | Useful when one session researches and another implements. |
+| [`pi-intercom`](https://github.com/nicobailon/pi-intercom) | Messaging between Pi sessions on the same machine. | Useful when one session researches and another implements. |
 | [`pi-autoname`](https://github.com/ssdiwu/pi-autoname) | Meaningful names for sessions. | Optional. |
 
 ### Context and reusable instructions
