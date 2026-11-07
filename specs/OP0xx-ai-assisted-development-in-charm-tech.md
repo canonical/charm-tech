@@ -31,7 +31,7 @@ It doesn't require anyone to use AI tools, and it doesn't relax any project's co
 | Layer | Choice | Policy |
 | :---- | :---- | :---- |
 | Harness | Pi | The team's supported harness for interactive coding and shared skills. |
-| Models | GLM and Kimi | The default model families. `DECISIONS.md` in `canonical/charm-tech` names the current model for each capability tier. |
+| Models | GLM and Kimi | The default model families on OpenRouter. |
 | Provider | OpenRouter, or GitHub Copilot for confidential projects | The provider, account, and model must also be approved for the data you send. An endpoint that works isn't necessarily one that's approved. |
 | Project context | `AGENTS.md` | Repository-specific instructions, version-controlled in the repository. |
 | Reusable procedures | Skills | Shared, version-controlled skills in the [Agent Skills](https://agentskills.io) format, so they work in any compatible harness. |
@@ -45,7 +45,7 @@ We recommend running Pi in the repository's own Workshop, our LXD-based developm
 
 #### Why these choices
 
-Pi is minimal and extensible, which matches how we like to build our own tools. It's highly customisable, but it's also opinionated, and we like that too. By default it runs tools without asking for approval. We think that's the right default, as long as it runs in a sandbox. Pi is open source under the MIT licence, although some future parts may be [Fair Source](https://fair.io). We admire the [values of Earendil](https://earendil.com/values/), the company behind Pi, and we expect [Pi Durable](https://earendil.com/posts/pi-durable/) to be worth exploring.
+Pi is minimal and extensible, which matches how we like to build our own tools. It's highly customisable, but it's also opinionated, and we like that too. By default it runs tools without asking for approval. We think that's the right default, as long as it runs in a sandbox. Pi is open source under the MIT licence. We admire the [values of Earendil](https://earendil.com/values/), the company behind Pi, and we expect [Pi Durable](https://earendil.com/posts/pi-durable/) to be worth exploring.
 
 Canonical lets us choose between GitHub Copilot, Gemini, and OpenRouter as the provider. In our experience, Gemini models generally aren't good enough. We tried Copilot, but we found that OpenRouter's flexibility suits us better. Copilot is still required for confidential projects.
 
@@ -60,7 +60,7 @@ Pi extensions are third-party npm packages that run with the same access as Pi. 
 | [`pi-lens`](https://github.com/apmantza/pi-lens) | Real-time feedback from language servers, linters, formatters, and type checkers. | The agent sees the same problems the project's own tooling reports. |
 | [`pi-subagents`](https://github.com/nicobailon/pi-subagents) | Delegation to a subagent, and scripted multi-agent workflows. | Useful for review passes in a fresh context. |
 | [`pi-web-access`](https://github.com/nicobailon/pi-web-access) | Web search, fetching URLs, cloning repositories, and extracting text from PDFs. | Search queries go to a third-party search provider, so the data rules here apply to them too. |
-| [`pi-prompt-template-model`](https://github.com/nicobailon/pi-prompt-template-model) | Lets a prompt template choose the model it runs with. | Makes it easy to send routine tasks to the lower-cost default. |
+| [`pi-prompt-template-model`](https://github.com/nicobailon/pi-prompt-template-model) | Lets a prompt template choose the model it runs with. | Makes it easy to send routine tasks to a lower-cost model. |
 | [`pi-intercom`](https://github.com/nicobailon/pi-intercom) | Messaging between Pi sessions on the same machine. | Useful when one session researches and another implements. |
 | [`pi-autoname`](https://github.com/ssdiwu/pi-autoname) | Meaningful names for sessions. | Optional. |
 
@@ -155,7 +155,7 @@ GitHub Actions is a reasonable place to start, because it already handles events
 
 ### Model choice and evaluation
 
-We name a capable default and a lower-cost default that's good enough for ordinary work. Use the lower-cost model for routine work and the more capable one when the task needs it. When you're not confident in an answer, comparing independent answers from both often helps more than prompting the same context again.
+Use a lower-cost model for routine work and a more capable one when the task needs it. When you're not confident in an answer, comparing independent answers from both often helps more than prompting the same context again.
 
 We review the defaults roughly monthly. A model doesn't become a default because it tops a benchmark or because one person had a good result with it. We try it on real Charm Tech work and compare it with the current defaults.
 
