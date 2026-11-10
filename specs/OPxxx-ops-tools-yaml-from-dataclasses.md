@@ -1,138 +1,162 @@
-# OPxxx — ops-tools: YAML generation from Python dataclasses
+# OPxxx - ops-tools: generate charmcraft YAML from Python classes
 
 | Field | Value |
 | --- | --- |
-| Index | OPxxx |
-| Title | ops-tools: YAML generation from Python dataclasses |
 | Type | Implementation |
-| Author | Tony Meyer |
-| Status | Draft |
-| Created | 2026-06-20 |
-| Reviewer | Pending Review |
+| Created | Jun 20, 2026 |
 
 ## Abstract
 
-`ops-tools` is a small command-line package, distributed independently on PyPI, that generates `charmcraft.yaml` configuration and action stanzas from Python dataclasses. Charm authors annotate their config and action classes in Python, then run `ops-tools generate-metadata` / `ops-tools generate-actions` to produce the corresponding YAML — replacing hand-maintained files with a single source of truth in code.
+Charms can define their config options and action parameters as Python classes, and load them with `CharmBase.load_config()` and `ActionEvent.load_params()`. However, Juju and Charmcraft still need the same schema as YAML in `charmcraft.yaml`, so a charm that uses classes has two copies of the schema to keep in sync, and in practice they drift.
 
-This spec captures the architectural decisions reached during review of [canonical/operator#1975](https://github.com/canonical/operator/pull/1975) ("feat: support for generating charmcraft YAML from Python classes"), which is the productisation of `ops-tools`. The PR accumulated 46 review threads and contained too many changes to effectively review. This document resolves questions from the review, so the four-PR implementation series (PR1–PR4) can land without re-opening them.
+This spec adds `ops-tools`, a small command-line package on PyPI that generates the `config` and `actions` YAML from those classes. The Python code becomes the single source of truth, and the YAML is a build artefact that CI can check.
 
 ## Rationale
 
-**Separate PyPI package.** `ops-tools` ships independently from `ops`, following the precedent set by `ops-scenario` (OP028) and `ops-tracing`. Like validators (see OP070, OP074 for packaging context), tools that are useful alongside `ops` but not part of the framework itself belong in their own packages: it keeps `ops`'s dependency surface minimal and lets `ops-tools` version independently (although, for convenience, we will likely release simultaneously). The import name is `ops_tools` (not `ops.tools` — Q9 below explains why a namespace package is not possible).
+We would like the source of truth to be in the charm code. Python is more expressive than the Juju config schema language or the JSON Schema subset used for action parameters, so the classes can carry more complex types and validation than the YAML can. The charm already needs the classes to load config and parameters at runtime, so the YAML is the copy that should be derived.
 
-**Why split PR1975?** At 2465 lines across 27 files, #1975 is not reviewable in its current form. Its 46 review threads contain five distinct technical debates (subcommand shape, ruamel.yaml vs PyYAML, 12-factor compatibility, `_attrdocs.py` AST fragility, packaging convention) that are entangled across comments. Splitting into smaller PRs separates the debates, allowing each to land on its own merits. The spec exists to short-circuit the "we keep discussing this" failure mode.
+`ops-tools` is a separate package rather than part of `ops`, for the same reasons that `ops-scenario` and `ops-tracing` are. It's only needed while developing and building the charm, not at runtime, so putting it in `ops` would add to every charm's dependencies for no benefit. A separate package can also be versioned independently (although we'll probably release it at the same time as `ops`, as we do the others).
 
-**What shipping unblocks.** Once `ops-tools` is on PyPI, charm authors can `uvx ops-tools generate-metadata` in their CI, eliminating manual YAML maintenance and the round-trip errors it causes. The tooling also provides a clear upgrade path away from hand-authored `charmcraft.yaml`: generate once, compare with `git diff`, then maintain in Python thereafter.
+We've prototyped this before, in [canonical/operator#1975](https://github.com/canonical/operator/pull/1975). The prototype worked, but it was too large to review well, and the discussion of several unrelated design questions got tangled together. This spec settles those questions up front, so that the implementation can land as a few smaller PRs that only need to be reviewed on their own merits.
 
-## Goals
+## Specification
 
-- Ship `ops-tools` 1.0 to PyPI with `generate-metadata` and `generate-actions` subcommands (PR1 + PR2 + PR4).
-- Provide a clean upgrade path for charm authors currently writing config and action YAML by hand.
-- Settle the nine architectural questions from #1975 so implementation PRs cite this spec rather than re-discussing them.
+### Example
 
-## Non-goals
+This config class:
 
-- Surgical in-place editing of `charmcraft.yaml` (PR3 dropped — see Q3).
-- Scenario integration (PR5 deferred).
-- Establishing a Charm Tech wide `ops-*` namespace package convention (Q9 — deferred until three data points exist).
-- Resolving the broader 12-factor charm direction for the ecosystem (Q4 deferred as wrongly-formed).
+```python
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class Config:
+    log_level: str = 'info'
+    """The level to log at."""
+    api_token: ops.Secret | None = None
+    """A secret holding the workload's API token."""
+```
 
-## Specification — decisions
+generates:
 
-### Q1: Subcommand shape
+```yaml
+config:
+  options:
+    log-level:
+      type: string
+      default: info
+      description: The level to log at.
+    api-token:
+      type: secret
+      description: A secret holding the workload's API token.
+```
 
-**Decision:** one `ops-tools` entry point with subcommands (`ops-tools generate-metadata`, `ops-tools generate-actions`).
+And this action class:
 
-A single entry point is discoverable via `ops-tools --help`, composes cleanly with `uvx` (`uvx ops-tools generate-metadata`), and matches the "one tool, multiple modes" framing. Separate per-operation console scripts would proliferate the global namespace; a `--mode` flag on one script would be less ergonomic than named subcommands. The subcommand structure is extensible: a future `ops-tools update-yaml` (if PR3 unblocks) fits naturally as a third subcommand. ([Thread 8](https://github.com/canonical/operator/pull/1975#discussion_r2302407622))
+```python
+class Compression(enum.Enum):
+    GZ = 'gzip'
+    BZ = 'bzip2'
 
-### Q2: Pydantic as a dependency
+@dataclasses.dataclass(frozen=True, kw_only=True)
+class RunBackupAction:
+    """Back up the database."""
 
-**Decision:** pydantic is an optional extra — `pip install ops-tools[pydantic]` — not a required dependency.
+    filename: str
+    """The name of the backup file."""
+    compression: Compression = Compression.GZ
+    """The type of compression to use."""
+```
 
-The default install is pydantic-free; docs lead with dataclasses. If a charm already uses pydantic, `ops-tools[pydantic]` enables cleaner field introspection via `Field(description=...)`. Implementation uses a lazy import (`try: import pydantic except ImportError: HAS_PYDANTIC = False`); both code paths exist in the codebase, the extra only gates installation. Output must be byte-identical between paths for the same input — this is a testable invariant enforced in PR1's test suite. ([Thread 19](https://github.com/canonical/operator/pull/1975#discussion_r2308940579))
+generates:
 
-### Q3: YAML library
+```yaml
+actions:
+  run-backup:
+    description: Back up the database.
+    params:
+      filename:
+        type: string
+        description: The name of the backup file.
+      compression:
+        type: string
+        description: The type of compression to use.
+        default: gzip
+        enum: [gzip, bzip2]
+    required: [filename]
+    additionalProperties: false
+```
 
-**Decision:** PyYAML throughout; ruamel.yaml not adopted. PR3 (`update-charmcraft-yaml` surgical-update script) is **dropped** from this series.
+Underscores in config option and parameter names become hyphens, which is the reverse of what `load_config()` and `load_params()` do. The action name comes from the class name, converted to kebab case, without the `Action` suffix.
 
-Consistency across Charm Tech repos outweighs ruamel's comment-preservation advantage. The whole rationale for PR3 was comment-preservation on round-trip; PyYAML cannot do this. The gating workflow becomes: generate fresh YAML and compare with `git diff` — a simpler and more transparent alternative. PR3 unblocks only if Charm Tech evaluates moving off PyYAML project-wide; that cross-project decision is tracked separately. ([Thread 27](https://github.com/canonical/operator/pull/1975#discussion_r2324187431), [Thread 29](https://github.com/canonical/operator/pull/1975#discussion_r2268772907))
+### Command line
 
-### Q5: Flag names
+There's a single `ops-tools` command with a subcommand for each operation:
 
-**Decision:** shorter forms — `--path`, `--config`, `--action`.
+```bash
+uvx ops-tools generate-metadata --config Config
+uvx ops-tools generate-actions --action '.+Action'
+```
 
-The Q1 subcommand namespacing already disambiguates the verbs: `generate-metadata --config` is unambiguous without needing `--config-file` or `--charm-path`. Future needs for a second `--path`-style argument are deferred until they appear concretely rather than guarded against pre-emptively. ([Thread 30](https://github.com/canonical/operator/pull/1975#discussion_r2286655050), [Thread 31](https://github.com/canonical/operator/pull/1975#discussion_r2286658715))
+A single entry point is easier to discover (`ops-tools --help` lists everything) and works neatly with `uvx`. It also leaves room for more subcommands later without adding more console scripts.
 
-### Q7: Type-annotation requirement
+The flags are short: `--config` and `--action` take a class, and `--path` is the charm's root directory (the current directory by default). The subcommand already says what's being generated, so the flags don't need to repeat it (`--config-file`, `--charm-path`, and so on). `--config` and `--action` can be given more than once. A class is either a bare name (looked up in `src/charm.py`), a `module:Class` reference for classes elsewhere in the charm, or a regular expression matching class names.
 
-**Decision:** support both `a | b` (PEP 604) and `Union[a, b]` / `Optional[a]`.
+The generated YAML goes to stdout.
 
-`typing.get_type_hints()` normalises both forms to the same internal representation at near-zero cost. Docs recommend `a | b` as the modern form; both are accepted at runtime. Ops 3.x's minimum is Python 3.10+, so `a | b` is never a syntax error. Mandating only the modern form would silently break valid charm code using `Union`; accepting both is strictly more compatible. ([Thread 6](https://github.com/canonical/operator/pull/1975#discussion_r2302399071))
+### Generate, don't edit
 
-### Q8: `_attrdocs.py` fragility
+`ops-tools` generates YAML. It doesn't edit `charmcraft.yaml` in place.
 
-**Decision:** hybrid — explicit metadata takes precedence; AST extraction is the documented fallback.
+Editing in place is only useful if it preserves the comments and layout of the rest of the file, and that needs a round-trip YAML library such as `ruamel.yaml`. Charm Tech uses PyYAML everywhere else, and we don't want to maintain two YAML libraries for one feature. Generating fresh output and comparing it with `git diff` is simpler, and makes it obvious what changed. If we ever move off PyYAML more broadly, in-place editing can be added as another subcommand.
 
-If `field.metadata.get("description")` (stdlib dataclasses) or `Field(description=...)` (pydantic) is present, use it. Otherwise fall back to AST extraction. Explicit tests are added for the known clobber scenarios: pydantic `model_fields`, `dataclasses.fields()`, mro-order (the parent-overwrites-child bug from Thread 12), and conditional imports. The explicit form is recommended in docs for new code; the AST fallback is supported-for-now. The mro-order fix lands in PR1 alongside the new `_attrdocs.py` test suite. ([Thread 12](https://github.com/canonical/operator/pull/1975#discussion_r2268799642))
+### Types
 
-### Q9: Packaging convention
+Config options map Python types to Juju config types:
 
-**Decision:** document `import ops_tools` (not `ops.tools`) in `ops-tools`'s own README; no charm-tech-wide `ops-*` namespace package convention yet.
+| Python | Juju |
+| --- | --- |
+| `str` | `string` |
+| `int` | `int` |
+| `float` | `float` |
+| `bool` | `boolean` |
+| `ops.Secret` | `secret` |
 
-`ops` cannot be a namespace package, so `ops.tools` is not possible. `ops-scenario` uses `import scenario` and `ops-tracing` uses `import ops_tracing` — two existing packages are already inconsistent, so ratifying a convention now would either bless the inconsistency or force a rename. Defer the convention until a third `ops-*` package provides a third data point. ([Thread 4](https://github.com/canonical/operator/pull/1975#discussion_r2271965470))
+Action parameters map to JSON Schema types: `str` to `string`, `int` to `integer`, `float` to `number`, `bool` to `boolean`, and lists and tuples to `array` (with `items` set from the element type). An `enum.Enum` becomes a `string` with an `enum` list of the member values. Fields without a default are listed in `required`, and `additionalProperties` is always `false`.
 
-## Deferred decisions
+Optional types (`X | None`) generate the type of `X`. A union of two types that Juju can't express (such as `int | str`) falls back to `string`.
 
-**Q4 — 12-factor charm compatibility.** Dimaqq raised this across Threads 29 and 35. The question as posed ("is this for 12-factor charms?") is wrongly-formed: it conflates what layout the *generator output* assumes with what layout the *target repo* uses. Re-open with the cleaner two-part question. Does not block PR1–PR4, which generate YAML sections without touching the top-level file layout.
+Annotations can use either `a | b` or `Union[a, b]` / `Optional[a]`. We resolve them with `typing.get_type_hints()`, which normalises both forms, so supporting both costs nothing, and requiring only the modern form would reject charm code that is perfectly valid. The documentation uses `a | b`, which is always available because `ops` requires Python 3.10 or later.
 
-**Q6 — Script name for the surgical-update command.** Q3's PyYAML decision dropped PR3 from this series, so the command Q6 would name does not exist for now. Re-opens when PR3 unblocks. Likely resolution at that time: a third `ops-tools` subcommand per Q1's structure, not a separate console script.
+### Descriptions
 
-## Open thread dispositions
+If a field has an explicit description, we use it: `field(metadata={'description': ...})` for a dataclass, or `Field(description=...)` for a Pydantic model. Otherwise, we fall back to the attribute docstring (the string literal immediately after the attribute, as in the examples above), which we find by parsing the class source. An action's description is the class docstring.
 
-These five threads were not clearly resolved in the PR, and need resolution before proceeding.
+The docstring form is much nicer to write, which is why we support it, but it's also the more fragile of the two: it relies on the source being available and on walking the AST correctly. We'll test it explicitly against inherited fields (a parent class's docstring mustn't overwrite the child's), Pydantic models, and conditional imports. The documentation will recommend explicit descriptions for new code.
 
-- **Thread 1** (`charm.py:35`) — **PR1.** Trivial comment-wording nit ("test expected to fail if uncommented"). Tucked into the test-charm lift in PR1. Recorded here so PR2 doesn't undo it.
+### Pydantic
 
-- **Thread 3** (`test_config.py:127`) — **Split.** Defaults-at-call-site is pre-existing `load_config` API; not in this series' scope. Required/non-required negative tests carried to PR5 (Scenario integration, deferred per PLAN).
+Pydantic isn't a dependency of `ops-tools`. The default install handles dataclasses (and any other class that `load_config()` and `load_params()` support), and `pip install ops-tools[pydantic]` adds support for reading Pydantic field metadata directly. The import is lazy, so both code paths are always present and the extra only controls what's installed. For the same class, both paths must generate exactly the same YAML, and the tests check this.
 
-- **Thread 7** (`README.md:113`) — **Wontfix.** README moves to a proper docs page in PR4 (per Thread 4). Line-numbered requests against the old README are stale by the time they would land; write any parallel doctest against the new docs page post-PR4.
+### Packaging
 
-- **Thread 25** (`_generate_yaml.py:160`) — **Wontfix for this series.** Reusing `ops.charm._juju_fields` would either expose `ops` internals or scope-creep a public-helper PR into this series. Build-time vs runtime traversal shapes overlap but aren't identical. If a future `ops` PR exposes a public traversal helper, `ops-tools` can refactor against it — flagged as a `[needs-design]` follow-up against `ops`.
+The package is `ops-tools` on PyPI, and the import name is `ops_tools`. It can't be `ops.tools`, because `ops` isn't a namespace package.
 
-- **Thread 45** (`test_generate_yaml_config.py:54`) — **Split.** Runtime optional-`Secret` semantics are pre-existing `load_config` behaviour, out of scope. Generator emission for `Optional[Secret]` gets a PR1 verbatim-output stability fixture (folds into Thread 46's fixture set). The spec documentation gap for `Optional[Secret]` in ops docs is a future ops-docs follow-up, not addressed here.
+We aren't going to set a convention for naming `ops-*` packages here. The two that exist already differ (`ops-scenario` is `import scenario` and `ops-tracing` is `import ops_tracing`), so a convention now would either bless that or force a rename. When there's a third package we'll have a better idea of which pattern to settle on.
 
-## Carry-forward per implementation PR
+### Implementation
 
-### PR1 — config YAML generation
+The code lives in a new `tools/` directory in `canonical/operator`, alongside `testing/` and `tracing/`, and lands in three PRs:
 
-Applies decisions **Q7** (type-annotation handling), **Q8** (`_attrdocs.py` hybrid approach and mro-order fix).
+1. Config generation, including description extraction and its tests, and tests that check the exact YAML output for a set of example classes.
+2. Action generation, reusing the description extraction from the first PR.
+3. Packaging: `pyproject.toml`, the `ops-tools` command and its subcommands, the Pydantic extra, a documentation page, and adding the package to the release process.
 
-Threads landing in PR1: all config-side HIGH threads (9, 10, 11, 16, 17, 18, 21, 23, 24, 26, 46), MED threads (13, 15, 20, 22), and LOW threads (1, 3, 7, 45 per dispositions above). Scope: `_generate_yaml.py` (config half), `_attrdocs.py` with explicit unit tests, doctest-shaped module examples, verbatim YAML stability fixture, in-thread simplifications listed in PLAN.
+Nothing is installable until the third PR, so the first two can be reviewed purely as code.
 
-### PR2 — action YAML generation
+## Out of scope
 
-Applies decisions **Q7** (type annotations; `_attrdocs.py` shared with PR1).
+- Editing `charmcraft.yaml` in place (see above).
+- Using the classes in `ops.testing`, for example to validate config in a state-transition test. That's worth doing, but it can be designed separately once the generator exists.
+- Generating any part of `charmcraft.yaml` other than `config` and `actions`.
 
-Threads landing in PR2: Thread 14 (per-attribute docstring spacing on `ActionDict`), Threads 37–44 (Copilot "statement has no effect" / `N801` naming family). Scope: `_generate_yaml.py` (action half), `test_generate_yaml_action.py` cleanup.
+## Open questions
 
-### PR3 — dropped
-
-Dropped as a consequence of the Q3 (YAML library) decision. The surgical `update-charmcraft-yaml` script required comment-preserving YAML round-tripping; PyYAML cannot provide that. Threads 27, 29, 30, 31, 35 are resolved in PR0 but have no implementation PR to land in for this series. PR3 re-opens if charm-tech moves off PyYAML.
-
-### PR4 — `ops-tools` packaging
-
-Applies decisions **Q1** (subcommand shape / entry-point wiring), **Q2** (pydantic extra in `pyproject.toml`), **Q5** (flag names applied in CLI layer), **Q9** (packaging rationale in README/docs).
-
-No thread is dominantly a PR4 item; Threads 4 and 8 land here as secondary carry-forward (README → docs page, `pyproject.toml` name, `uvx` entry-point wiring). Scope: `tools/pyproject.toml`, docs page replacing README, release pipeline integration.
-
-### PR5 — Scenario integration (deferred, not in this series)
-
-`testing/src/scenario/state.py` changes from #1975: "left for future work, rather than baking anything in to Scenario at this time." Thread 2 (Thread 3's secondary) maps to opening a tracking issue on `canonical/operator` referencing #1975's Scenario thread. Reopens in a future cycle.
-
-## References
-
-- Upstream PR: <https://github.com/canonical/operator/pull/1975>
-- Reviewer threads cited above (Q1–Q9): all in
-  <https://github.com/canonical/operator/pull/1975>
-- OP070 (charm libs as namespace packages): `specs/OP070-charm-libs-as-namespace-packages.md`
-- OP074 (charmlibs interfaces): `specs/OP074-charmlibs-interfaces.md`
+How should CI compare the generated YAML with what's committed? This is straightforward for a charm that keeps its config in `config.yaml` and its actions in `actions.yaml`, because the generated output is the whole file. However, most charms now have everything in `charmcraft.yaml`, and the generated `config` and `actions` sections are only part of that file. We could document a recipe that extracts the sections first (with `yq`, perhaps), or add a check mode to `ops-tools` that does the comparison itself. I think the check mode is probably nicer, but it isn't needed for the first release.
