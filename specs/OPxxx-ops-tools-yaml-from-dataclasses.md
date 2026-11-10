@@ -91,7 +91,7 @@ Underscores in config option and parameter names become hyphens, which is the re
 There's a single `ops-tools` command with a subcommand for each operation:
 
 ```bash
-uvx ops-tools generate-metadata --config Config
+uvx ops-tools generate-config --config Config
 uvx ops-tools generate-actions --action '.+Action'
 ```
 
